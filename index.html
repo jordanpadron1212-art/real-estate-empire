@@ -6,7 +6,7 @@
 <title>REAL ESTATE EMPIRE</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--sans:Arial,Helvetica,sans-serif;--mono:Arial,Helvetica,sans-serif}
+:root{--sans:Arial,Helvetica,sans-serif;--mono:ui-monospace,"SF Mono","SFMono-Regular",Menlo,Consolas,"Roboto Mono","Liberation Mono",monospace}
 html[data-theme="dark"]{
   --bg:#0a0c0f;--surface:#101317;--surface2:#161a20;--line:#232932;--line-soft:#1a1f26;
   --txt:#e6ebf2;--txt-mid:#9aa3b0;--txt-dim:#5f6772;--accent-soft:#aab4c2;
@@ -399,6 +399,33 @@ body{font-size:13.5px}
 .frow{font-size:13.5px;padding:7px 12px}
 .nav .tab{font-size:11px}.nav .tab .ic{font-size:15px}
 .toast{font-size:13px}.modal h3{font-size:17px}
+
+/* ── SHARP / SPREADSHEET PASS ─────────────────── */
+/* Square the corners to 2px on panels & controls (3D button look preserved). */
+.mbtn,.mbtn.sm,.mbtn.wide,.nav .tab,.seg,.segchip,
+.card,.strip,.cell,.own-card,.loan-card,.loc-card,.note-card,.mktbox,
+.score-widget,.rule-card,.hood-intel,.pp-dept,.banner-1031,.tier-card,
+.cs-cell,.cs-prog-wrap,.type-card,.scale-card,.pstat-box,.watch-section,
+.fq,.fqI,.rparam input,#advisor,.dec,
+.badge,.rtag,.tier-chip,.lc-chip,.auc-badge,.whl-badge,.insp-badge,.toast,
+.red-flag,.insp-ok{border-radius:2px}
+.seg{overflow:hidden}
+.modal{border-radius:2px 2px 0 0}
+/* thin tracks/bars stay minimal */
+.prog-bar,.prog-fill,.mkt-track,.mkt-fill,.note-prog,.note-bar,
+.cs-prog-bar,.cs-prog-fill,.phase-band,.phase-seg{border-radius:1px}
+/* genuinely circular elements stay round */
+.type-card .tt .dot,.news-dot,.toggle,.toggle::after{border-radius:50%}
+
+/* Gridlines + zebra striping → spreadsheet feel */
+.card .row:nth-child(even){background:var(--surface2)}
+.card .row:hover{background:var(--surface)}
+.row{border-bottom:1px solid var(--line)}
+.fin .frow:nth-child(even){background:var(--surface2)}
+/* crisp column rules on KPI / stat grids */
+.strip .cell,.own-stats .ocell,.loan-nums .lcell,
+.hood-intel .hi-cell{border-right-color:var(--line)}
+.pstat-box{border-color:var(--line)}
 </style>
 </head>
 <body>

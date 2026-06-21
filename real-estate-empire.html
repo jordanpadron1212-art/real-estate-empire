@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>REAL ESTATE EMPIRE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--sans:Arial,Helvetica,sans-serif;--mono:Arial,Helvetica,sans-serif}
+html[data-theme="dark"]{
+  --bg:#0a0c0f;--surface:#101317;--surface2:#161a20;--line:#232932;--line-soft:#1a1f26;
+  --txt:#e6ebf2;--txt-mid:#9aa3b0;--txt-dim:#5f6772;--accent-soft:#aab4c2;
+  --pos:#46d98a;--neg:#ff5d5d;--warn:#e0b84a;--info:#5cc8ff;
+  --k-top:#232932;--k-bot:#13171c;--k-edge:#343c47;--k-hi:rgba(255,255,255,.05);
+  --p-top:#e3e9f1;--p-bot:#b7c0cd;--p-txt:#0a0c10;--p-hi:#ffffff;--p-lo:#8a94a3;--p-inset:rgba(255,255,255,.65);
+  --tile-hi:rgba(255,255,255,.045);--page-tint:transparent;--ov:rgba(4,6,9,.78);
+}
+html[data-theme="light"]{
+  --bg:#dfe2e6;--surface:#edeff2;--surface2:#e4e7eb;--line:#cfd5dc;--line-soft:#d9dde2;
+  --txt:#181c22;--txt-mid:#525a64;--txt-dim:#878e98;--accent-soft:#3c4450;
+  --pos:#12824a;--neg:#c43c3c;--warn:#a9791a;--info:#1f6f9e;
+  --k-top:#edeff2;--k-bot:#dce0e5;--k-edge:#f7f8fa;--k-hi:rgba(255,255,255,.8);
+  --p-top:#2d3540;--p-bot:#181d24;--p-txt:#f4f5f7;--p-hi:#49525f;--p-lo:#0d1015;--p-inset:rgba(255,255,255,.12);
+  --tile-hi:rgba(255,255,255,.55);--page-tint:radial-gradient(140% 100% at 50% 0%,rgba(120,130,145,.10),transparent 60%);--ov:rgba(40,44,50,.5);
+}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100dvh;transition:background .25s,color .25s}
+body{max-width:600px;margin:0 auto;font-size:12.5px;-webkit-font-smoothing:antialiased;background-image:var(--page-tint);padding-bottom:64px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pos{color:var(--pos)}.neg{color:var(--neg)}.warn{color:var(--warn)}.info{color:var(--info)}
+
+/* ── MACHINED BUTTON ─────────────────────────── */
+.mbtn{font-family:var(--sans);font-weight:600;font-size:11.5px;letter-spacing:.3px;padding:8px 11px;border-radius:7px;cursor:pointer;color:var(--txt);background:linear-gradient(180deg,var(--k-top),var(--k-bot));border:1px solid var(--line);border-top-color:var(--k-edge);box-shadow:inset 0 1px 0 var(--k-hi),0 2px 4px rgba(0,0,0,.4);transition:all .12s;text-align:center;user-select:none}
+.mbtn:active{transform:translateY(1px);box-shadow:inset 0 2px 5px rgba(0,0,0,.5)}
+.mbtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.mbtn.pri{color:var(--p-txt);background:linear-gradient(180deg,var(--p-top),var(--p-bot));border-top-color:var(--p-hi);border-color:var(--p-lo);box-shadow:inset 0 1px 0 var(--p-inset),0 2px 5px rgba(0,0,0,.45)}
+.mbtn.danger{color:#fff;background:linear-gradient(180deg,#e2554f,#b8332e);border-top-color:#f08a85;border-color:#8e211d}
+.mbtn.green{color:#fff;background:linear-gradient(180deg,#2d9e5c,#1b6e3a);border-top-color:#40c070;border-color:#155030;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.4)}
+.mbtn.warn{color:#0a0c0f;background:linear-gradient(180deg,#e8c455,#c09820);border-top-color:#f5d870;border-color:#9a7810;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 2px 4px rgba(0,0,0,.4)}
+.mbtn.sm{padding:5px 9px;font-size:10.5px;border-radius:6px}
+.mbtn.wide{width:100%;padding:11px;font-size:13px}
+
+/* ── START OVERLAY ───────────────────────────── */
+.ov{position:fixed;inset:0;z-index:200;background:var(--ov);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);overflow-y:auto;padding:24px 16px}
+.ov.hide{display:none}
+.ov-card{max-width:540px;margin:0 auto}
+.ov h1{font-weight:700;font-size:24px;letter-spacing:1px;text-align:center}
+.ov .tag{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--txt-dim);text-transform:uppercase;text-align:center;margin-top:3px}
+.ov .q{font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--txt-dim);margin:22px 0 9px}
+.type-card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:all .14s;box-shadow:inset 0 1px 0 var(--tile-hi)}
+.type-card.sel{border-color:var(--accent-soft);box-shadow:inset 0 1px 0 var(--tile-hi),0 0 0 1px var(--accent-soft)}
+.type-card .tt{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.type-card .tt .dot{width:8px;height:8px;border-radius:50%;background:var(--accent-soft)}
+.type-card.sel .tt .dot{background:var(--pos);box-shadow:0 0 8px var(--pos)}
+.type-card .td{color:var(--txt-mid);font-size:11.5px;line-height:1.5;margin-top:5px}
+.type-card .tm{font-family:var(--mono);font-size:10px;color:var(--txt-dim);margin-top:7px;display:flex;gap:12px;flex-wrap:wrap}
+.scale-row{display:flex;gap:8px}
+.scale-card{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 8px;text-align:center;cursor:pointer;transition:all .14s}
+.scale-card.sel{border-color:var(--accent-soft);box-shadow:0 0 0 1px var(--accent-soft)}
+.scale-card .sn{font-weight:600;font-size:13px}
+.scale-card .sc{font-family:var(--mono);font-size:11px;color:var(--pos);margin-top:3px}
+.scale-card .ss{font-family:var(--mono);font-size:9.5px;color:var(--txt-dim);margin-top:2px}
+
+/* ── HEADER ──────────────────────────────────── */
+header{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--line)}
+.hrow1{display:flex;align-items:center;gap:9px;padding:8px 12px 6px}
+.brand{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand .nm{font-weight:600;font-size:13.5px;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .sub{font-family:var(--mono);font-size:8.5px;letter-spacing:1.2px;color:var(--txt-dim);text-transform:uppercase}
+.badge{font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.5px;padding:2px 6px;border-radius:4px;background:var(--surface2);border:1px solid var(--line);color:var(--accent-soft);white-space:nowrap}
+.badge.pos{background:rgba(70,217,138,.12);border-color:rgba(70,217,138,.3);color:var(--pos)}
+.badge.neg{background:rgba(255,93,93,.12);border-color:rgba(255,93,93,.3);color:var(--neg)}
+.badge.warn{background:rgba(224,184,74,.12);border-color:rgba(224,184,74,.3);color:var(--warn)}
+.badge.info{background:rgba(92,200,255,.12);border-color:rgba(92,200,255,.3);color:var(--info)}
+.hstats{display:flex;gap:12px;margin-left:auto;align-items:center}
+.hstat{text-align:right;line-height:1.1}
+.hstat .sv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px}
+.hstat .sl{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-dim)}
+.seg{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--surface2)}
+.seg button{font-family:var(--sans);font-weight:600;font-size:9.5px;padding:5px 8px;border:none;cursor:pointer;background:transparent;color:var(--txt-dim)}
+.seg button.on{background:linear-gradient(180deg,var(--k-top),var(--k-bot));color:var(--txt);box-shadow:inset 0 1px 0 var(--k-hi)}
+.hrow2{display:flex;align-items:center;gap:7px;padding:5px 12px 8px;border-top:1px solid var(--line-soft)}
+.datebox{line-height:1.05;min-width:0}
+.datebox .dd{font-family:var(--mono);font-weight:600;font-size:11.5px;white-space:nowrap}
+.datebox .dc{font-family:var(--mono);font-size:9px;color:var(--txt-dim);letter-spacing:.5px}
+.tctrl{margin-left:auto;display:flex;gap:5px;align-items:center}
+
+/* ── SECTION HEADERS ─────────────────────────── */
+.sec{padding:11px 12px 5px;display:flex;align-items:center;gap:8px}
+.sec h2{font-size:9.5px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:var(--txt-dim)}
+.sec .rule{flex:1;height:1px;background:var(--line)}
+.sec .act{font-family:var(--mono);font-size:9.5px;color:var(--accent-soft);cursor:pointer;letter-spacing:.5px}
+
+/* ── KPI STRIP ────────────────────────────────── */
+.strip{display:flex;margin:0 12px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.cell{flex:1;padding:7px 9px;border-right:1px solid var(--line-soft);position:relative;min-width:0;overflow:hidden}
+.cell:last-child{border-right:none}
+.cell .lbl{font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;letter-spacing:-.4px;margin-top:2px;white-space:nowrap}
+.cell .dl{font-family:var(--mono);font-size:8px;margin-top:1px;color:var(--txt-dim)}
+
+/* ── FILTER CHIPS ─────────────────────────────── */
+.srcfilter{display:flex;gap:5px;flex-wrap:wrap;margin:6px 12px 4px}
+.segchip{font-size:10.5px;font-weight:600;letter-spacing:.3px;padding:4px 11px;border-radius:13px;border:1px solid var(--line);background:linear-gradient(180deg,var(--surface),var(--surface2));color:var(--txt-mid);cursor:pointer;transition:all .12s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.segchip:active{transform:translateY(1px)}
+.segchip.on{background:linear-gradient(180deg,var(--p-top),var(--p-bot));color:var(--p-txt);border-color:var(--p-lo);box-shadow:inset 0 1px 0 var(--p-inset),0 1px 3px rgba(0,0,0,.35)}
+
+/* ── CARD + ROW (list pattern) ───────────────── */
+.card{margin:0 12px;background:var(--surface);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line-soft);align-items:start;cursor:pointer;transition:background .1s}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--surface2)}
+.rname{font-weight:600;font-size:12.5px}
+.rdetail{font-size:10px;color:var(--txt-dim);margin-top:2px;line-height:1.4}
+.rright{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.rprice{font-family:var(--mono);font-weight:600;font-size:13px}
+.rtag{font-size:8.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:2px 6px;border-radius:9px;white-space:nowrap}
+.tag-pos{background:rgba(70,217,138,.14);color:var(--pos)}
+.tag-neg{background:rgba(255,93,93,.14);color:var(--neg)}
+.tag-warn{background:rgba(224,184,74,.16);color:var(--warn)}
+.tag-info{background:rgba(92,200,255,.14);color:var(--info)}
+.tag-dim{background:var(--surface2);color:var(--txt-mid)}
+
+/* ── PROPERTY STAT BOX (inside row) ─────────── */
+.pstat-box{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;background:var(--surface2);border-radius:6px;padding:8px 9px;border:1px solid var(--line-soft);margin-top:8px}
+.pstat .psl{font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
+.pstat .psv{font-family:var(--mono);font-weight:600;font-size:12px;margin-top:2px}
+.pstat .psd{font-family:var(--mono);font-size:8px;color:var(--txt-dim);margin-top:1px}
+
+/* ── CONDITION PIPS ──────────────────────────── */
+.cond-row{display:flex;gap:3px;align-items:center;margin-top:6px}
+.pip{width:13px;height:5px;border-radius:2px;background:var(--surface2);border:1px solid var(--line)}
+.pip.c1{background:#ff5d5d;border-color:#cc3333}
+.pip.c2{background:#e07020;border-color:#b05818}
+.pip.c3{background:#e0b84a;border-color:#b09030}
+.pip.c4{background:#50c860;border-color:#30a040}
+.pip.c5{background:#46d98a;border-color:#25a860}
+
+/* ── OWNED PROPERTY CARD ─────────────────────── */
+.own-card{margin:0 12px 8px;background:var(--surface);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.own-head{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px 6px}
+.own-addr{font-weight:600;font-size:12.5px}
+.own-sub{font-size:9.5px;color:var(--txt-dim);margin-top:2px}
+.own-stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+.ocell{padding:7px 9px;border-right:1px solid var(--line-soft)}
+.ocell:last-child{border-right:none}
+.ocell .ol{font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
+.ocell .ov{font-family:var(--mono);font-weight:600;font-size:13px;margin-top:2px}
+.ocell .od{font-family:var(--mono);font-size:8.5px;color:var(--txt-dim);margin-top:1px}
+.own-acts{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap}
+.prog-wrap{padding:4px 12px 8px}
+.prog-lbl{font-size:10px;color:var(--warn);margin-bottom:3px}
+.prog-bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:var(--warn);transition:width .4s}
+
+/* ── LOAN CARD ───────────────────────────────── */
+.loan-card{margin:0 12px 8px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--txt-dim);border-radius:7px;overflow:hidden}
+.loan-card.hml{border-left-color:var(--neg)}
+.loan-card.conv{border-left-color:var(--pos)}
+.loan-card.dscr{border-left-color:var(--info)}
+.loan-card.priv{border-left-color:var(--warn)}
+.loan-head{display:flex;justify-content:space-between;align-items:center;padding:9px 12px 6px}
+.loan-name{font-weight:600;font-size:12px}
+.loan-prop{font-family:var(--mono);font-size:9px;color:var(--txt-dim);margin-top:2px}
+.loan-nums{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line-soft)}
+.lcell{padding:7px 9px;border-right:1px solid var(--line-soft)}
+.lcell:last-child{border-right:none}
+.lcell .ll{font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
+.lcell .lv{font-family:var(--mono);font-weight:600;font-size:12px;margin-top:2px}
+
+/* ── FINANCIAL ROWS ──────────────────────────── */
+.fin{margin:0 12px}
+.frow{display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--line-soft);font-size:11.5px}
+.frow:last-child{border-bottom:none}
+.frow .fl{color:var(--txt-mid)}
+.frow .fv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500}
+.frow.tot{border-top:1px solid var(--line);background:var(--surface2);font-weight:600}
+.frow.tot .fl{color:var(--txt)}
+
+/* ── LENDER ROWS (financing options) ─────────── */
+.lender-list{display:flex;flex-direction:column;gap:5px;margin:0 12px}
+.lender-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer;transition:all .12s}
+.lender-row.sel{border-color:var(--accent-soft);background:var(--surface2);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.lender-row.dim{opacity:.45;cursor:not-allowed}
+.lender-row:active:not(.dim){transform:translateY(1px)}
+.lender-main{min-width:0;flex:1}
+.lender-name{font-size:11.5px;font-weight:600}
+.lender-sub{font-size:9.5px;color:var(--txt-dim);margin-top:2px;line-height:1.4}
+.lender-right{text-align:right;flex-shrink:0}
+.lender-rate{font-family:var(--mono);font-size:12px;font-weight:600}
+.lender-note{font-family:var(--mono);font-size:9px;color:var(--txt-dim);margin-top:2px}
+
+/* ── EVENT FEED ──────────────────────────────── */
+.feed{display:flex;flex-direction:column;gap:4px;padding:6px 12px 0}
+.ev{display:flex;gap:8px;padding:7px 9px;background:var(--surface);border:1px solid var(--line);border-left-width:3px;border-radius:6px;font-size:11.5px;line-height:1.45}
+.ev.good{border-left-color:var(--pos)}.ev.bad{border-left-color:var(--neg)}.ev.warn{border-left-color:var(--warn)}.ev.info{border-left-color:var(--info)}.ev.plain{border-left-color:var(--line)}
+.ev .d{font-family:var(--mono);font-size:9px;color:var(--txt-dim);white-space:nowrap;padding-top:1px;min-width:32px}
+
+/* ── MARKET CONDITION BOX ────────────────────── */
+.mktbox{margin:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:9px 11px}
+.mkt-row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.mkt-lbl{font-size:10px;font-weight:600;color:var(--txt-mid);width:72px;flex:0 0 auto}
+.mkt-track{flex:1;height:6px;background:var(--line-soft);border-radius:3px;overflow:hidden}
+.mkt-fill{height:100%;border-radius:3px;transition:width .4s}
+.mkt-val{font-family:var(--mono);font-size:10px;width:54px;flex:0 0 auto;text-align:right}
+
+/* ── CREW/TEAM CARDS ─────────────────────────── */
+.pp-dept{border:1px solid var(--line);border-radius:7px;margin:0 12px 7px;overflow:hidden}
+.pp-head{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--accent-soft);background:var(--surface2);padding:5px 12px;border-bottom:1px solid var(--line-soft)}
+
+/* ── MODAL ───────────────────────────────────── */
+.modal-ov{position:fixed;inset:0;z-index:150;background:var(--ov);display:flex;align-items:flex-end;justify-content:center}
+.modal-ov.hide{display:none}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:12px 12px 0 0;width:100%;max-width:600px;padding:16px;max-height:86dvh;overflow-y:auto}
+.modal h3{font-weight:600;font-size:15px;margin-bottom:4px}
+.modal .x{float:right;cursor:pointer;color:var(--txt-dim);font-size:18px;line-height:1}
+
+/* ── DECISION BOX ────────────────────────────── */
+.dec{background:var(--surface);border:1px solid var(--warn);border-radius:8px;padding:11px 12px;margin:8px 0}
+.dec .dt{font-weight:600;font-size:13px;color:var(--warn);margin-bottom:5px}
+.dec .db{font-size:11.5px;color:var(--txt-mid);line-height:1.5;margin-bottom:9px}
+.dec .dbtns{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ── INPUT FIELDS ────────────────────────────── */
+.fq{background:var(--surface2);border:1px solid var(--line);border-radius:7px;padding:8px 9px;margin-bottom:8px}
+.fqL{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
+.fqI{width:100%;margin-top:4px;background:var(--surface);border:1px solid var(--line);color:var(--txt);font-family:var(--mono);font-size:15px;font-weight:600;padding:7px;border-radius:6px;outline:none}
+.fqI:focus{border-color:var(--accent-soft)}
+.fqS{font-size:9px;color:var(--txt-dim);margin-top:4px;line-height:1.35}
+input[type=range]{accent-color:var(--accent-soft);height:24px}
+
+/* ── ADVISOR TOAST ───────────────────────────── */
+#advisor{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:576px;z-index:120;background:var(--surface);border:1px solid var(--warn);border-radius:9px;padding:11px 13px;box-shadow:0 6px 24px rgba(0,0,0,.5);display:flex;gap:10px;align-items:flex-start}
+#advisor.hide{display:none}
+.adv-icon{font-size:18px;flex-shrink:0;line-height:1;margin-top:1px}
+.adv-body{flex:1;min-width:0}
+.adv-h{font-weight:600;font-size:11px;color:var(--warn);margin-bottom:3px}
+.adv-t{font-size:11px;color:var(--txt-mid);line-height:1.45}
+.adv-x{color:var(--txt-dim);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;padding:0 2px}
+
+/* ── BOTTOM NAV ──────────────────────────────── */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;z-index:60;display:flex;gap:5px;padding:6px 7px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line)}
+.nav .tab{flex:1;text-align:center;padding:7px 2px;border-radius:7px;cursor:pointer;font-weight:600;font-size:9.5px;letter-spacing:.1px;color:var(--txt-dim);background:linear-gradient(180deg,var(--k-top),var(--k-bot));border:1px solid var(--line);border-top-color:var(--k-edge);box-shadow:inset 0 1px 0 var(--k-hi),0 1px 2px rgba(0,0,0,.3);transition:all .12s;-webkit-tap-highlight-color:transparent}
+.nav .tab .ic{display:block;font-size:13px;margin-bottom:1px;color:var(--txt-mid)}
+.nav .tab.on{background:linear-gradient(180deg,var(--k-bot),var(--bg));border-top-color:var(--accent-soft);color:var(--txt)}
+.nav .tab.on .ic{color:var(--txt)}
+.nav .tab:active{transform:translateY(1px)}
+
+/* ── PAGES ───────────────────────────────────── */
+.page{display:none;padding-top:4px;padding-bottom:8px}.page.on{display:block}
+
+/* ── TOASTS ──────────────────────────────────── */
+.toasts{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:170;display:flex;flex-direction:column;gap:5px;align-items:center;pointer-events:none}
+.toast{background:var(--surface2);border:1px solid var(--line);border-radius:7px;padding:7px 13px;font-size:11.5px;font-weight:500;opacity:0;transition:opacity .25s;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.toast.show{opacity:1}.toast.good{border-color:var(--pos);color:var(--pos)}.toast.bad{border-color:var(--neg);color:var(--neg)}.toast.warn{border-color:var(--warn);color:var(--warn)}.toast.info{border-color:var(--info);color:var(--info)}
+
+/* ── SUBNOTE / FOOT ──────────────────────────── */
+.subnote{padding:5px 12px 8px;font-size:10.5px;color:var(--txt-dim);line-height:1.55}
+.foot{text-align:center;color:var(--txt-dim);font-size:9.5px;padding:14px 12px 6px;letter-spacing:.3px}
+
+/* ── AUTOMATION RULES ────────────────────────── */
+.rule-card{margin:0 12px 7px;background:var(--surface);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.rule-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.rule-info{flex:1;min-width:0}
+.rule-name{font-weight:600;font-size:12.5px}
+.rule-desc{font-size:11px;color:var(--txt-dim);margin-top:2px;line-height:1.4}
+.toggle{position:relative;width:38px;height:21px;background:var(--line);border-radius:11px;cursor:pointer;transition:background .2s;flex-shrink:0;border:1px solid var(--line);padding:0;outline:none}
+.toggle.on{background:var(--pos);border-color:var(--pos)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on::after{transform:translateX(17px)}
+.rule-params{padding:0 12px 10px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line-soft)}
+.rparam{display:flex;align-items:center;gap:6px;font-size:11px;padding-top:8px;color:var(--txt-mid)}
+.rparam input{width:84px;background:var(--surface2);border:1px solid var(--line);color:var(--txt);font-family:var(--mono);font-size:13px;padding:4px 7px;border-radius:5px;text-align:right;outline:none}
+.rparam input:focus{border-color:var(--accent-soft)}
+
+/* ── MARKET CYCLE PHASE ──────────────────────── */
+.phase-band{display:flex;border-radius:6px;overflow:hidden;margin:0 12px 6px;border:1px solid var(--line);background:var(--surface2)}
+.phase-seg{flex:1;padding:5px 3px;text-align:center;font-size:9.5px;font-weight:600;letter-spacing:.3px;color:var(--txt-dim);transition:all .3s;border-right:1px solid var(--line)}
+.phase-seg:last-child{border-right:none}
+.phase-seg.active{background:linear-gradient(180deg,var(--k-top),var(--k-bot));color:var(--txt);box-shadow:inset 0 1px 0 var(--k-hi)}
+
+/* ── 1031 EXCHANGE BANNER ────────────────────── */
+.banner-1031{margin:6px 12px;background:rgba(92,200,255,.07);border:1px solid rgba(92,200,255,.3);border-radius:7px;padding:10px 12px}
+.b1-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.b1-txt{font-size:12px;color:var(--info);font-weight:600;line-height:1.2}
+.b1-sub{font-size:10.5px;color:var(--txt-dim);margin-top:3px;line-height:1.4}
+.b1-weeks{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--info);line-height:1;text-align:right;white-space:nowrap}
+.b1-wlbl{font-size:9px;color:var(--txt-dim);text-align:right;letter-spacing:.5px;text-transform:uppercase}
+
+/* ── PORTFOLIO SCORE WIDGET ──────────────────── */
+.score-widget{margin:0 12px 8px;background:var(--surface);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.score-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px 6px;border-bottom:1px solid var(--line-soft)}
+.score-grade{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1}
+.score-label{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--txt-dim);margin-top:2px}
+.score-num{font-family:var(--mono);font-size:13px;color:var(--txt-dim)}
+.score-row{padding:5px 12px 3px}
+.score-row-head{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px}
+.score-row-lbl{color:var(--txt-mid)}
+.score-row-val{font-family:var(--mono);font-weight:600}
+
+/* ── LOC CARD ─────────────────────────────────── */
+.loc-card{margin:0 12px 8px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--info);border-radius:7px;overflow:hidden}
+.loc-head{display:flex;justify-content:space-between;align-items:center;padding:9px 12px 6px}
+.loc-title{font-weight:600;font-size:12px}
+.loc-avail{font-family:var(--mono);font-size:10px;color:var(--txt-dim);margin-top:2px}
+
+/* ── HOOD TREND CHIP ─────────────────────────── */
+.trend-up2{color:#46d98a;font-size:10px;font-weight:700}
+.trend-up1{color:#9bd98a;font-size:10px}
+.trend-dn1{color:#e07020;font-size:10px}
+.trend-dn2{color:#ff5d5d;font-size:10px;font-weight:700}
+.trend-flat{color:var(--txt-dim);font-size:10px}
+/* Chunk 13 */
+.star-btn{background:none;border:none;font-size:15px;cursor:pointer;padding:2px 4px;color:var(--txt-dim);line-height:1;flex-shrink:0}
+.star-btn.on{color:#f5c518}
+.watch-section{margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-left:3px solid #f5c518;border-radius:7px;overflow:hidden}
+.watch-head{padding:7px 12px 5px;font-size:11px;font-weight:600;border-bottom:1px solid var(--line-soft)}
+.tier-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:10px 0}
+.tier-card{padding:10px 8px;background:var(--surface2);border:2px solid var(--line);border-radius:8px;cursor:pointer;text-align:center}
+.tier-card:hover{border-color:var(--info)}
+.tier-ltr{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1}
+.tier-name{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--txt-dim);margin:3px 0 6px}
+.tier-stat{font-size:9.5px;color:var(--txt-mid);line-height:1.5}
+.tier-chip{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;font-family:var(--mono)}
+.tier-A{background:rgba(70,217,138,.2);color:#46d98a}.tier-B{background:rgba(60,150,240,.2);color:var(--info)}.tier-C{background:rgba(255,100,80,.2);color:var(--neg)}
+/* Achievements */
+.ach-section{margin:0 12px 8px}
+.ach-toggle{font-size:10px;color:var(--txt-dim);cursor:pointer;padding:3px 0;user-select:none}
+.ach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}
+.ach-chip{padding:7px 5px 5px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;text-align:center;opacity:.35;transition:opacity .2s}
+.ach-chip.on{opacity:1;border-color:rgba(70,217,138,.4);background:rgba(70,217,138,.06)}
+.ach-icon{font-size:16px;line-height:1}
+.ach-lbl{font-size:8.5px;font-weight:600;margin-top:2px;color:var(--txt-mid);line-height:1.2}
+.ach-date{font-size:7.5px;color:var(--txt-dim);margin-top:1px}
+/* Hood Intel Strip */
+.hood-intel{display:grid;grid-template-columns:repeat(4,1fr);margin:0 12px 8px;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.hi-cell{padding:8px 4px 6px;text-align:center;border-right:1px solid var(--line-soft);background:var(--surface)}
+.hi-cell:last-child{border-right:none}
+.hi-letter{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1}
+.hi-name{font-size:7.5px;color:var(--txt-dim);margin:1px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi-row{font-size:9px;color:var(--txt-mid);line-height:1.6}
+/* Inspection */
+.insp-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;padding:2px 7px;border-radius:4px;background:rgba(70,217,138,.12);color:var(--pos);border:1px solid rgba(70,217,138,.25);font-weight:600;margin-left:6px}
+.red-flag{margin:3px 0;padding:4px 8px;background:rgba(255,80,80,.07);border-left:3px solid var(--neg);border-radius:3px;font-size:10.5px}
+.insp-ok{margin:3px 0;padding:4px 8px;background:rgba(70,217,138,.07);border-left:3px solid var(--pos);border-radius:3px;font-size:10.5px;color:var(--pos)}
+/* Chunk 15 */
+.auc-badge{background:rgba(245,197,24,.15);color:#f5c518;border:1px solid rgba(245,197,24,.3);font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700;font-family:var(--mono)}
+.whl-badge{background:rgba(150,80,240,.15);color:#b87fff;border:1px solid rgba(150,80,240,.3);font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line-soft);font-size:11px}
+.calc-row:last-child{border:none;padding-top:7px;font-weight:600}
+.mkt-toolbar{display:flex;gap:6px;padding:0 12px 8px;flex-wrap:wrap}
+/* Chunk 16 */
+.news-section{padding:0 12px;margin-bottom:6px}
+.news-item{padding:6px 0;border-bottom:1px solid var(--line-soft);display:flex;gap:8px;align-items:flex-start}
+.news-item:last-child{border-bottom:none}
+.news-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.news-dot.good{background:var(--pos)}.news-dot.warn{background:var(--warn)}.news-dot.info{background:var(--info)}.news-dot.neg{background:var(--neg)}
+.news-headline{font-size:10.5px;font-weight:500;line-height:1.35;color:var(--txt)}
+.news-meta{font-size:8.5px;color:var(--txt-dim);margin-top:2px}
+.news-signal{font-size:8.5px;color:var(--warn);font-style:italic;margin-top:1px}
+.lc-chip{font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;vertical-align:middle;font-family:var(--mono)}
+.lc-ok{background:rgba(70,217,138,.12);color:var(--pos)}
+.lc-warn{background:rgba(240,160,0,.12);color:var(--warn)}
+.lc-urgent{background:rgba(255,80,80,.12);color:var(--neg)}
+.lc-mtm{background:rgba(240,140,0,.12);color:#e0900a}
+/* Notes Receivable */
+.note-card{background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--line)}
+.note-addr{font-weight:700;font-size:11.5px;margin-bottom:4px}
+.note-meta{font-size:10px;color:var(--txt-dim)}
+.note-prog{height:4px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+.note-bar{height:100%;background:var(--pos);border-radius:2px}
+/* Career Stats */
+.cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cs-cell{background:var(--surface);border-radius:8px;padding:10px 12px;border:1px solid var(--line);text-align:center}
+.cs-val{font-size:18px;font-weight:800;color:var(--accent-soft);letter-spacing:-.5px}
+.cs-lbl{font-size:9.5px;color:var(--txt-dim);margin-top:2px;text-transform:uppercase}
+.cs-prog-wrap{margin-top:8px;background:var(--surface);border-radius:8px;padding:10px 12px;border:1px solid var(--line)}
+.cs-prog-bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.cs-prog-fill{height:100%;background:linear-gradient(90deg,var(--pos),var(--accent-soft));border-radius:4px}
+/* Acceptance probability hint */
+.acc-hint{font-size:10px;padding:4px 8px;border-radius:4px;margin-top:4px;text-align:center}
+.acc-good{background:rgba(70,217,138,.12);color:var(--pos)}
+.acc-warn{background:rgba(240,160,0,.12);color:var(--warn)}
+.acc-bad{background:rgba(255,80,80,.12);color:var(--neg)}
+
+/* ── READABILITY PASS ────────────────────────── */
+html[data-theme="dark"]{--txt-mid:#c2cad6;--txt-dim:#929ba8;--accent-soft:#c6ced9}
+html[data-theme="light"]{--txt-mid:#374049;--txt-dim:#565e68;--accent-soft:#283039}
+body{font-size:13.5px}
+.brand .nm{font-size:15px}.brand .sub{font-size:9.5px;letter-spacing:1px}
+.badge{font-size:9.5px}
+.hstat .sv{font-size:15px}.hstat .sl{font-size:9.5px}
+.datebox .dd{font-size:13px}.datebox .dc{font-size:10.5px}.seg button{font-size:10.5px}
+.ov .q{font-size:11px}.type-card .tt{font-size:15px}.type-card .td{font-size:12.5px;line-height:1.55}.type-card .tm{font-size:10.5px}
+.scale-card .sn{font-size:14px}.scale-card .ss{font-size:10px}
+.sec h2{font-size:11px;letter-spacing:1.1px}.sec .act{font-size:11px}
+.cell .lbl{font-size:10.5px;letter-spacing:.4px}.cell .val{font-size:15px}.cell .dl{font-size:10px}
+.ev{font-size:13px;line-height:1.5}.ev .d{font-size:10.5px}
+.rname{font-size:14px}.rdetail{font-size:11.5px;line-height:1.45}.rprice{font-size:15px}.rtag{font-size:10px}
+.frow{font-size:13.5px;padding:7px 12px}
+.nav .tab{font-size:11px}.nav .tab .ic{font-size:15px}
+.toast{font-size:13px}.modal h3{font-size:17px}
+</style>
+</head>
+<body>
+
+<!-- ════ START OVERLAY ════ -->
+<div class="ov" id="startOv">
+  <div class="ov-card">
+    <h1>REAL ESTATE EMPIRE</h1>
+    <div class="tag">Property Investment Simulator</div>
+
+    <div class="q">1 · Choose your market</div>
+    <div id="mktCards">
+      <div class="type-card sel" data-mkt="buyer" onclick="selCard(this,'mktCards')">
+        <div class="tt"><span class="dot"></span>Buyer's Market</div>
+        <div class="td">Motivated sellers, high inventory, room to negotiate. More distressed deals available. Ideal for the BRRRR strategy.</div>
+        <div class="tm"><span>Deals: Abundant</span><span>Prices: Below ARV</span><span>Competition: Low</span></div>
+      </div>
+      <div class="type-card" data-mkt="balanced" onclick="selCard(this,'mktCards')">
+        <div class="tt"><span class="dot"></span>Balanced Market</div>
+        <div class="td">Normal conditions. Mix of deal types. Good cap rates available if you know where to look.</div>
+        <div class="tm"><span>Deals: Moderate</span><span>Prices: Near ARV</span><span>Competition: Medium</span></div>
+      </div>
+      <div class="type-card" data-mkt="seller" onclick="selCard(this,'mktCards')">
+        <div class="tt"><span class="dot"></span>Seller's Market</div>
+        <div class="td">Low inventory, bidding wars, fast appreciation. Harder to find cash flow — equity builds fast.</div>
+        <div class="tm"><span>Deals: Scarce</span><span>Prices: At/Over ARV</span><span>Competition: High</span></div>
+      </div>
+    </div>
+
+    <div class="q">2 · Starting capital</div>
+    <div class="scale-row" id="capCards">
+      <div class="scale-card" data-cap="25000" onclick="selCard(this,'capCards')">
+        <div class="sn">Hustle</div><div class="sc">$25k</div><div class="ss">Hard mode</div>
+      </div>
+      <div class="scale-card sel" data-cap="75000" onclick="selCard(this,'capCards')">
+        <div class="sn">Funded</div><div class="sc">$75k</div><div class="ss">Standard</div>
+      </div>
+      <div class="scale-card" data-cap="200000" onclick="selCard(this,'capCards')">
+        <div class="sn">Investor</div><div class="sc">$200k</div><div class="ss">Easy mode</div>
+      </div>
+    </div>
+
+    <div class="q">3 · Your name (optional)</div>
+    <input id="playerName" placeholder="e.g. Jordan" style="width:100%;background:var(--surface);border:1px solid var(--line);color:var(--txt);font-family:var(--sans);font-size:13px;border-radius:7px;padding:10px;outline:none">
+
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px">
+      <button class="mbtn pri wide" onclick="startGame()">Start New Game ▸</button>
+      <button class="mbtn wide" id="loadBtn" style="display:none" onclick="continueGame()">Continue Saved Game ▸</button>
+    </div>
+    <div class="foot">Real Estate Empire · ARV · BRRRR · cap rate · cash-on-cash · hard money · DSCR loans · market cycles · auto-save</div>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="app" style="display:none">
+<header>
+  <div class="hrow1">
+    <div class="brand">
+      <span class="nm" id="hName">EMPIRE</span>
+      <span class="sub" id="hSub">loading...</span>
+    </div>
+    <span class="badge" id="hBadge">—</span>
+    <div class="hstats" style="margin-left:auto;display:flex;gap:14px">
+      <div class="hstat"><div class="sv pos" id="hCash">$0</div><div class="sl">Cash</div></div>
+      <div class="hstat"><div class="sv" id="hNW">$0</div><div class="sl">Net Worth</div></div>
+      <div class="hstat"><div class="sv" id="hCF">$0/mo</div><div class="sl">Cash Flow</div></div>
+    </div>
+    <div class="seg"><button id="thD" class="on" onclick="setTheme('dark')">D</button><button id="thL" onclick="setTheme('light')">L</button></div>
+  </div>
+  <div class="hrow2">
+    <div class="datebox">
+      <div class="dd" id="hDate">Jan 2024 · Wk 1</div>
+      <div class="dc" id="hMkt">Buyer's Market · Prime 7.0%</div>
+    </div>
+    <div class="tctrl">
+      <button class="mbtn sm" id="spd0" onclick="setSpeed(0)">⏸</button>
+      <button class="mbtn sm" id="spd1" onclick="setSpeed(1)">1×</button>
+      <button class="mbtn sm" id="spd2" onclick="setSpeed(2)">2×</button>
+      <button class="mbtn pri sm" onclick="tick()">Week ▸</button>
+    </div>
+  </div>
+</header>
+
+<!-- DASHBOARD -->
+<div class="page on" id="p-dash">
+  <div class="sec"><h2>Portfolio at a Glance</h2><div class="rule"></div></div>
+  <div class="strip" id="dashStrip">
+    <div class="cell"><div class="lbl">Properties</div><div class="val" id="d-props">0</div></div>
+    <div class="cell"><div class="lbl">Total Equity</div><div class="val" id="d-equity">$0</div></div>
+    <div class="cell"><div class="lbl">Monthly CF</div><div class="val" id="d-cf">$0</div></div>
+    <div class="cell"><div class="lbl">Total Debt</div><div class="val" id="d-debt">$0</div></div>
+  </div>
+  <div class="sec" style="padding-top:10px"><h2>Portfolio Health</h2><div class="rule"></div></div>
+  <div id="scoreWidget"></div>
+  <div class="sec"><h2>Market Cycle</h2><div class="rule"></div></div>
+  <div class="phase-band" id="dashPhaseBand"></div>
+  <div class="banner-1031" id="dash1031" style="display:none"></div>
+  <div class="sec"><h2>Neighborhood Intel</h2><div class="rule"></div></div>
+  <div id="hoodStrip"></div>
+  <div class="sec"><h2>Market Conditions</h2><div class="rule"></div></div>
+  <div class="mktbox" id="dashMkt"></div>
+  <div class="sec"><h2>Career Stats</h2><div class="rule"></div></div>
+  <div id="careerStats"></div>
+  <div id="achieveWidget"></div>
+  <div class="sec"><h2>Activity Feed</h2><div class="rule"></div></div>
+  <div class="feed" id="dashFeed"></div>
+  <div class="foot" id="dashFoot"></div>
+</div>
+
+<!-- MARKET -->
+<div class="page" id="p-market">
+  <div class="sec"><h2>Available Properties</h2><div class="rule"></div><span class="act" onclick="doRefreshMarket()">Refresh</span></div>
+  <div class="subnote">Properties expire after 12 weeks. Negotiate below ask — motivated sellers take 10–20% off. Always check ARV vs. all-in cost.</div>
+  <div class="mkt-toolbar">
+    <button class="mbtn sm" onclick="sourceWholesaleDeal()" id="btnWholesale">Source Deal</button>
+    <button class="mbtn sm" onclick="openDealCalc()">Deal Calc</button>
+  </div>
+  <div class="sec" style="padding-top:4px"><h2>Market Intelligence</h2><div class="rule"></div></div>
+  <div id="newsSection"></div>
+  <div class="srcfilter" id="mktFilter">
+    <span class="segchip on" data-f="all" onclick="setMktF('all',this)">All</span>
+    <span class="segchip" data-f="SFR" onclick="setMktF('SFR',this)">SFR</span>
+    <span class="segchip" data-f="Duplex" onclick="setMktF('Duplex',this)">Duplex</span>
+    <span class="segchip" data-f="4-Plex" onclick="setMktF('4-Plex',this)">4-Plex</span>
+  </div>
+  <div id="propList"></div>
+</div>
+
+<!-- PORTFOLIO -->
+<div class="page" id="p-port">
+  <div class="sec"><h2>My Portfolio</h2><div class="rule"></div></div>
+  <div class="subnote" id="portNote">No properties owned yet. Buy your first deal in Market.</div>
+  <div id="portList"></div>
+</div>
+
+<!-- FINANCE -->
+<div class="page" id="p-fin">
+  <div class="sec"><h2>Debt Summary</h2><div class="rule"></div></div>
+  <div class="strip" id="finStrip">
+    <div class="cell"><div class="lbl">Total Debt</div><div class="val neg" id="f-debt">$0</div></div>
+    <div class="cell"><div class="lbl">Debt Service</div><div class="val" id="f-dsvc">$0/mo</div></div>
+    <div class="cell"><div class="lbl">Avg Rate</div><div class="val" id="f-rate">—</div></div>
+  </div>
+  <div class="sec"><h2>Active Loans</h2><div class="rule"></div></div>
+  <div id="loanList"></div>
+  <div class="sec"><h2>Credit Line</h2><div class="rule"></div></div>
+  <div id="locSection"></div>
+  <div class="sec" id="noteSecHdr" style="display:none"><h2>Notes Receivable</h2><div class="rule"></div></div>
+  <div id="notesSection"></div>
+</div>
+
+<!-- TEAM & AUTOMATION -->
+<div class="page" id="p-team">
+  <div class="sec"><h2>Operations</h2><div class="rule"></div><span class="act" id="teamAct" onclick="openHireModal()">+ Hire</span></div>
+  <div class="srcfilter" id="teamSubtab" style="padding-top:2px">
+    <span class="segchip on" data-ts="team" onclick="setTeamTab('team',this)">Team</span>
+    <span class="segchip" data-ts="auto" onclick="setTeamTab('auto',this)">Automation</span>
+  </div>
+  <div id="teamList"></div>
+</div>
+
+<!-- LEDGER -->
+<div class="page" id="p-ledger">
+  <div class="sec"><h2>Transaction History</h2><div class="rule"></div></div>
+  <div id="ledgerWrap"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+  <div class="tab on" data-tab="dash" onclick="go('dash',this)"><span class="ic">▦</span>Dashboard</div>
+  <div class="tab" data-tab="market" onclick="go('market',this)"><span class="ic">🏘</span>Market</div>
+  <div class="tab" data-tab="port" onclick="go('port',this)"><span class="ic">🏠</span>Portfolio</div>
+  <div class="tab" data-tab="fin" onclick="go('fin',this)"><span class="ic">💰</span>Finance</div>
+  <div class="tab" data-tab="team" onclick="go('team',this)"><span class="ic">👷</span>Team</div>
+  <div class="tab" data-tab="ledger" onclick="go('ledger',this)"><span class="ic">📋</span>Ledger</div>
+</nav>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov hide" id="modalOv">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<!-- ADVISOR -->
+<div id="advisor" class="hide">
+  <div class="adv-icon">💡</div>
+  <div class="adv-body">
+    <div class="adv-h" id="advH">Advisor</div>
+    <div class="adv-t" id="advT"></div>
+  </div>
+  <div class="adv-x" onclick="closeAdvisor()">×</div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  REAL ESTATE EMPIRE · Engine v1
+// ══════════════════════════════════════════════════
+
+// ── CONSTANTS ──────────────────────────────────────
+const HOODS = {
+  A:{key:'A',name:'Lakeview',    capBase:.048,appreci:.06, rentMult:1.30,vacBase:.04,crimeEv:.02},
+  B:{key:'B',name:'Northbrook',  capBase:.068,appreci:.04, rentMult:1.00,vacBase:.06,crimeEv:.05},
+  C:{key:'C',name:'Millcreek',   capBase:.088,appreci:.025,rentMult:.78, vacBase:.09,crimeEv:.10},
+  D:{key:'D',name:'Southgate',   capBase:.115,appreci:.01, rentMult:.60, vacBase:.14,crimeEv:.18},
+};
+const PTYPES   = ['SFR','Duplex','4-Plex'];
+const STREETS  = ['Maple St','Oak Ave','Elm Dr','Cedar Ln','Pine Blvd','Birch Way','Walnut Ct','Ash Rd','Willow St','Cherry Ave','Harbor Dr','Ridgeline Rd','Summit Ct','Valley View Ln'];
+const FNAMES   = ['James','Maria','Robert','Linda','David','Susan','Michael','Karen','William','Lisa','Richard','Nancy','Thomas','Patricia'];
+const LNAMES   = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson','Moore','Taylor','Anderson'];
+const COND_LBL = ['','Severe Distress','Heavy Rehab','Moderate','Light Cosmetic','Turnkey'];
+const COND_DSC = ['','Foundation/fire — full gut required','Gut kitchen, bath, HVAC, roof','Kitchen, bath, and systems work','Paint, carpet, staging only','Move-in ready'];
+const REHAB_PSF= [[0,0],[55,120],[28,55],[12,28],[3,12],[0,3]]; // $/sqft [min,max]
+const REHAB_WKS= [0,16,10,6,3,0];
+const COND_DISC= [0,.60,.72,.81,.90,.97]; // asking as % of ARV
+const RENT_PSF = {A:1.1,B:1.2,C:1.3,D:1.4}; // $/sqft/mo × rentMult → per-unit rent
+
+// Team roster definitions
+const TEAM_TYPES = {
+  contractor:{role:'Contractor',icon:'🔨',desc:'Cuts rehab time by 20% per hire (stacks, max 3).',weeklyCost:450,maxHire:3,
+    stat:'Rehab speed',effect:'−20% rehab time per hire'},
+  pm:{role:'Property Manager',icon:'🏢',desc:'Handles tenant calls, maintenance, vacancies. Charges 8% of rent already baked in — your time is free.',weeklyCost:0,maxHire:1,
+    stat:'Passive income',effect:'Auto-collect rent, auto-fill vacancies'},
+  realtor:{role:'Buyer\'s Agent',icon:'🔑',desc:'Finds off-market deals each week — not listed on the public market.',weeklyCost:300,maxHire:1,
+    stat:'Deal flow',effect:'+1 off-market listing/wk'},
+  bookkeeper:{role:'Bookkeeper',icon:'📊',desc:'Tracks deductions and reduces your effective tax liability on rental income.',weeklyCost:180,maxHire:1,
+    stat:'Tax savings',effect:'−12% income tax drag'},
+  screener:{role:'Tenant Screener',icon:'⭐',desc:'Runs background checks and auto-selects A-tier tenants on every placement. Also halves late payment risk portfolio-wide.',weeklyCost:250,maxHire:1,
+    stat:'Tenant quality',effect:'Auto A-tier · −50% late pay risk'},
+};
+
+// Market event templates
+const MARKET_EVENTS = [
+  {id:'rate_cut',   prob:.04,cls:'good', msg:'Fed cuts rates 0.25% — mortgage rates drop.',        fn:()=>{G.primeRate=Math.max(.03,G.primeRate-.0025);updateRates();}},
+  {id:'rate_hike',  prob:.04,cls:'bad',  msg:'Fed hikes rates 0.25% — mortgage rates rise.',        fn:()=>{G.primeRate=Math.min(.12,G.primeRate+.0025);updateRates();}},
+  {id:'boom',       prob:.03,cls:'good', msg:'Local job boom — rents surge 4–8% in hot neighborhoods.',fn:()=>rentBoom()},
+  {id:'recession',  prob:.02,cls:'bad',  msg:'Recession hits — vacancy rates climb across the board.',fn:()=>vacancySpike()},
+  {id:'insurance',  prob:.05,cls:'warn', msg:'Insurance premiums rise industry-wide.',              fn:()=>{G.insuranceMod=(G.insuranceMod||1)*1.08;}},
+  {id:'zoning',     prob:.02,cls:'info', msg:'City upzones near Northbrook — multi-unit values rise.',fn:()=>hoodBoom('B')},
+  {id:'crime_drop', prob:.03,cls:'good', msg:'Crime stats improve in Southgate — cap rates compress.', fn:()=>hoodBoom('D')},
+  {id:'tax_assess', prob:.04,cls:'warn', msg:'County reassessment — property taxes up 6% this year.', fn:()=>{G.taxMod=(G.taxMod||1)*1.06;}},
+];
+// Automation rule definitions
+const RULE_TYPES = {
+  auto_rehab:{
+    icon:'🔨',label:'Auto-Start Rehab',
+    desc:'Start rehab on vacant distressed properties whenever cash stays above your reserve floor.',
+    params:[{id:'threshold',label:'Keep reserve ($)',def:20000}],
+  },
+  auto_rent:{
+    icon:'🔑',label:'Auto-Place Tenant',
+    desc:'Immediately rent out any vacant turnkey (Condition 5) property at market rate.',
+    params:[],
+  },
+  auto_refi:{
+    icon:'💳',label:'Auto-Refi Hard Money',
+    desc:'Refinance HML loans into 30-year Conventional automatically before the balloon hits.',
+    params:[],
+  },
+  reserve_fund:{
+    icon:'🏦',label:'Repair Reserve Fund',
+    desc:'Set aside a % of gross monthly rents into an emergency repair account. Repairs draw from reserve first.',
+    params:[{id:'pct',label:'Reserve % of rent',def:5}],
+  },
+  auto_sell:{
+    icon:'🏷',label:'Auto-List on Equity Target',
+    desc:'List a rented property for sale automatically when its equity hits your target.',
+    params:[{id:'equityTarget',label:'Equity target ($)',def:75000}],
+  },
+};
+
+function rentBoom(){
+  G.portfolio.filter(p=>p.status==='rented'&&(p.hood==='A'||p.hood==='B')).forEach(p=>{
+    const inc=Math.round(p.monthlyRent*rnd(.04,.08)/25)*25;
+    p.monthlyRent+=inc;
+    evFeed(`Rent increase at ${p.addr}: +${fmt$(inc,true)}/mo`,'good');
+  });
+  if(G.hoodTrends){G.hoodTrends.A=Math.min(2,(G.hoodTrends.A||0)+1);G.hoodTrends.B=Math.min(2,(G.hoodTrends.B||0)+1);}
+}
+function vacancySpike(){
+  Object.keys(HOODS).forEach(k=>HOODS[k].vacBase=Math.min(.25,HOODS[k].vacBase+.02));
+  G.portfolio.filter(p=>p.status==='rented').forEach(p=>p.vacRate=Math.min(.25,p.vacRate+.02));
+  if(G.hoodTrends) Object.keys(G.hoodTrends).forEach(k=>G.hoodTrends[k]=Math.max(-2,G.hoodTrends[k]-1));
+}
+function hoodBoom(hk){
+  G.portfolio.filter(p=>p.hood===hk).forEach(p=>{
+    p.marketVal=Math.round(p.marketVal*1.05/1000)*1000;
+  });
+  if(G.hoodTrends) G.hoodTrends[hk]=Math.min(2,(G.hoodTrends[hk]||0)+1);
+}
+
+// Financing products — rates updated live from prime
+const LOANS = {
+  cash:{name:'All Cash',      rate:0,    term:0,  down:1.00,points:0,   intOnly:false,dti:false},
+  hml: {name:'Hard Money',   rate:.135, term:12, down:.10, points:.03,  intOnly:true, dti:false},
+  conv:{name:'Conventional', rate:.075, term:360,down:.20, points:0,    intOnly:false,dti:true },
+  dscr:{name:'DSCR Loan',    rate:.085, term:360,down:.25, points:.01,  intOnly:false,dti:false},
+  priv:{name:'Private Money',rate:.10,  term:24, down:.10, points:.02,  intOnly:true, dti:false},
+};
+
+// ── STATE ───────────────────────────────────────────
+let G = {};
+
+function initState(mktType, startCash, playerName){
+  const mMods={buyer:{pm:.88,df:1.35},balanced:{pm:1.0,df:1.0},seller:{pm:1.14,df:.70}};
+  G={
+    playerName:playerName||'Investor', mktType, mMod:mMods[mktType]||mMods.balanced,
+    cash:startCash,
+    week:1,month:1,year:2024,
+    primeRate:.070, mktCycle:mktType==='buyer'?30:mktType==='seller'?70:50,
+    portfolio:[],market:[],loans:[],team:[],ledger:[],
+    activeTab:'dash',mktFilter:'all',
+    autoSpeed:0,autoTimer:null,
+    pidSeq:0,lidSeq:0,
+    rules:[],reserve:0,pending1031:null,
+    taxMod:1,insuranceMod:1,
+    loc:{limit:0,balance:0,rate:0,status:'none'},
+    yearStats:{acquired:0,sold:0},
+    hoodTrends:{A:0,B:0,C:0,D:0},
+    watchlist:[],
+    auctions:[],
+    news:[],
+    pendingEvents:[],
+    won:false,
+    achievements:{},
+    lifetimeSold:0,
+    lifetimeRehab:0,
+    lifetimeRefi:0,
+    lifetimeAcquired:0,
+    achExpanded:false,
+    notes:[],
+    careerCF:0,
+    bestDealProfit:0,
+    highestNW:0,
+  };
+  updateRates();
+  genMarket(8);
+}
+function updateRates(){
+  LOANS.conv.rate=G.primeRate+.005;
+  LOANS.dscr.rate=G.primeRate+.015;
+}
+
+// ── FINANCIAL MATH ──────────────────────────────────
+function mpmt(P,annR,n){ // monthly amortizing payment
+  if(n===0||P===0) return 0;
+  const r=annR/12;
+  if(r===0) return P/n;
+  return P*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+}
+function ioPmt(P,annR){return P*(annR/12);}
+function noi(p){ // monthly NOI
+  const r=p.monthlyRent||0,v=r*(p.vacRate||HOODS[p.hood].vacBase);
+  const tax=p.marketVal*.011/12*(G.taxMod||1);   // 1.1% property tax/yr × market event modifier
+  const ins=(p.sqft||1000)*.042*(G.insuranceMod||1); // ~$0.50/sqft/yr × insurance event modifier
+  const maint=(p.sqft||1000)*.083;               // ~$1/sqft/yr maintenance
+  return r-v-(r*(p.mgmtPct||0))-tax-ins-maint-(p.hoa||0);
+}
+function capRate(p,price){return price>0?(noi(p)*12)/price:0;}
+function grm(price,mRent){return mRent>0?price/(mRent*12):0;}
+function equity(p){const l=activeLoan(p);return p.marketVal-(l?l.balance:0);}
+function activeLoan(p){return G.loans.find(l=>l.propId===p.id&&l.status==='active');}
+function totalEquity(){return G.portfolio.reduce((s,p)=>s+equity(p),0);}
+function totalDebt(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.balance,0);}
+function totalDSvc(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.payment,0);}
+function netWorth(){return G.cash+totalEquity();}
+function portCF(){
+  return G.portfolio.filter(p=>p.status==='rented').reduce((s,p)=>{
+    const l=activeLoan(p);return s+noi(p)-(l?l.payment:0);
+  },0);
+}
+function dscr(p,pmt){return pmt>0?noi(p)/pmt:999;}
+
+// ── PROPERTY GENERATION ────────────────────────────
+function rnd(a,b){return a+Math.random()*(b-a);}
+function ri(a,b){return Math.floor(rnd(a,b+1));}
+function pick(arr){return arr[ri(0,arr.length-1)];}
+function pickHood(){return pick(['A','A','B','B','B','C','C','D']);}
+
+function genProp(forceHood, forceCond){
+  const hk=forceHood||pickHood(), h=HOODS[hk], pt=pick(PTYPES);
+  const units=pt==='SFR'?1:pt==='Duplex'?2:4;
+  const cond=forceCond||ri(1,5);
+  const sqft=pt==='SFR'?ri(900,2200):pt==='Duplex'?ri(1200,2400):ri(2000,3600);
+  const beds=pt==='SFR'?ri(2,5):2, baths=pt==='SFR'?ri(1,3):1, yr=ri(1955,2015);
+  const arvPSF={A:rnd(160,300),B:rnd(90,180),C:rnd(55,115),D:rnd(30,75)};
+  const arv=Math.round(sqft*arvPSF[hk]*(units>1?(1+(units-1)*.2):1)/1000)*1000;
+  const ask=Math.round(arv*COND_DISC[cond]*G.mMod.pm/1000)*1000;
+  const [rm,rx]=REHAB_PSF[cond];
+  const rehabEst=Math.round(sqft*rnd(rm,rx)/500)*500;
+  const rentPU=Math.round(sqft/units*RENT_PSF[hk]*h.rentMult/25)*25;
+  const monthlyRent=rentPU*units;
+  return{
+    id:++G.pidSeq, addr:`${ri(100,9900)} ${pick(STREETS)}`, ptype:pt, units, hood:hk,
+    cond, sqft, beds, baths, yr, arv, ask, rehabEst, monthlyRent,
+    vacRate:h.vacBase, status:'market', wom:0,
+    sellerName:`${pick(FNAMES)} ${pick(LNAMES)}`,
+    marketVal:0,purchasePrice:0,cashInvested:0,
+    rehabCost:0,rehabWeeksLeft:0,rehabWksTotal:0,
+    mgmtPct:0,hoa:0,listPrice:0,listWeeks:0,tenant:null,
+  };
+}
+function genMarket(n){
+  const ct=Math.round(n*(G.mMod.df||1));
+  for(let i=0;i<ct;i++) G.market.push(genProp());
+}
+
+// ── TIME SYSTEM ────────────────────────────────────
+function tick(){
+  G.week++;
+  if(G.week>4){G.week=1;G.month++;monthlyTick();}
+  if(G.month>12){G.month=1;G.year++;yearlyTick();}
+
+  // Contractor speed bonus: each contractor cuts 20% off remaining rehab weeks
+  const contractors=G.team.filter(t=>t.type==='contractor').length;
+  const rehabSpeed=Math.min(1+contractors*.20,1.60); // cap at 60% bonus
+
+  // Rehab progress
+  G.portfolio.forEach(p=>{
+    if(p.status==='rehab'&&p.rehabWeeksLeft>0){
+      p.rehabWeeksLeft=Math.max(0,p.rehabWeeksLeft-(rehabSpeed>1?rehabSpeed-1:0)-1);
+      if(p.rehabWeeksLeft<=0){
+        p.status='vacant';p.cond=5;p.marketVal=p.arv;
+        G.lifetimeRehab=(G.lifetimeRehab||0)+1;
+        evFeed(`Rehab complete: ${p.addr} — ARV ${fmt$(p.arv,1)}. Ready to rent or sell.`,'good');
+        advise('BRRRR Opportunity',`${p.addr} rehab done at ARV ${fmt$(p.arv,1)}. Cash-out refi at 75% LTV returns ~${fmt$(Math.round(p.arv*.75/1000)*1000,1)} — recycle that into your next deal.`);
+      }
+    }
+    // Weekly market value drift (small random walk)
+    if(p.status!=='market'&&p.marketVal>0){
+      p.marketVal=Math.round(p.marketVal*(1+(Math.random()-.48)*.002)/100)*100;
+    }
+  });
+
+  // Listed properties — weekly sale chance
+  G.portfolio.filter(p=>p.status==='listed').forEach(p=>{
+    const baseChance=G.mktType==='seller'?.20:G.mktType==='buyer'?.05:.11;
+    const priceDisc=p.listPrice<p.marketVal*1.02?1.5:p.listPrice>p.marketVal*1.10?.4:1; // reward fair pricing
+    if(Math.random()<baseChance*priceDisc){
+      if(p.sellerFinance) executeSFSale(p.id);
+      else executeSale(p.id);
+    }
+  });
+
+  // Realtor unlocks off-market deal each week
+  if(G.team.some(t=>t.type==='realtor')&&Math.random()<.6){
+    const p=genProp();p.offMkt=true;
+    G.market.unshift(p);
+    if(G.week===1) evFeed('Off-market deal found by your realtor — check Market.','info');
+  }
+
+  // Market listings age + refresh
+  tickPendingEvents();
+  G.market.forEach(p=>p.wom++);
+  G.market=G.market.filter(p=>p.wom<12);
+  // Purge expired listings from watchlist and auctions
+  const mktIds=new Set(G.market.map(p=>p.id));
+  G.watchlist=(G.watchlist||[]).filter(id=>mktIds.has(id));
+  G.auctions=(G.auctions||[]).filter(a=>mktIds.has(a.propId)||a.status!=='open');
+  tickAuctions();
+  if(G.market.length<5) genMarket(2);
+
+  // HML warnings (8 months before balloon)
+  G.loans.filter(l=>l.status==='active'&&l.type==='hml').forEach(l=>{
+    const rem=l.termMonths-(l.monthsPaid||0);
+    if(rem===8){const p=G.portfolio.find(x=>x.id===l.propId);
+      advise('Hard Money Warning',`Your HML on <b>${p?.addr||'a property'}</b> matures in ~2 months. Refinance into Conventional or DSCR now, or list for sale immediately.`);}
+  });
+
+  renderAll();
+}
+
+// ── AUTOMATION ENGINE ──────────────────────────────
+function processAutomation(){
+  if(!G.rules||!G.rules.length)return;
+  G.rules.filter(r=>r.active).forEach(r=>{
+    switch(r.type){
+      case 'auto_rehab':
+        G.portfolio.filter(p=>p.status==='vacant'&&p.cond<5).forEach(p=>{
+          const floor=Number(r.params.threshold)||20000;
+          if(G.cash>=(p.rehabEst+floor)){
+            G.cash-=p.rehabEst;
+            p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];
+            p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=(p.rehabCost||0)+p.rehabEst;
+            ledger(`Auto-Rehab: ${p.addr}`,-p.rehabEst);
+            evFeed(`[AUTO] Rehab started at ${p.addr} — ${fmt$(p.rehabEst,true)}`,'info');
+          }
+        });
+        break;
+      case 'auto_rent':
+        G.portfolio.filter(p=>p.status==='vacant'&&p.cond===5).forEach(p=>{
+          p.status='rented';p.tenant=`${pick(FNAMES)} ${pick(LNAMES)}`;
+          evFeed(`[AUTO] Tenant placed at ${p.addr} — ${fmt$(p.monthlyRent,true)}/mo`,'good');
+        });
+        break;
+      case 'auto_refi':
+        G.loans.filter(l=>l.status==='active'&&l.type==='hml').forEach(l=>{
+          const rem=l.termMonths-(l.monthsPaid||0);
+          if(rem<=2){
+            const p=G.portfolio.find(x=>x.id===l.propId);if(!p)return;
+            const maxRefi=Math.round(p.marketVal*.75);
+            if(maxRefi<l.balance){evFeed(`[AUTO] Refi blocked on ${p.addr} — not enough equity`,'warn');return;}
+            l.status='paid';
+            const pmt=mpmt(maxRefi,LOANS.conv.rate,360);
+            G.loans.push({id:++G.lidSeq,propId:p.id,type:'conv',
+              name:`Auto-Refi — ${p.addr.split(' ').slice(0,2).join(' ')}`,
+              rate:LOANS.conv.rate,termMonths:360,balance:maxRefi,payment:pmt,
+              points:0,intOnly:false,monthsPaid:0,status:'active'});
+            const co=maxRefi-l.balance;G.cash+=co;
+            ledger(`Auto-Refi: ${p.addr}`,co);
+            evFeed(`[AUTO] HML refinanced on ${p.addr} — ${fmt$(co,true)} cash out`,'good');
+          }
+        });
+        break;
+      case 'reserve_fund':{
+        const pct=(Number(r.params.pct)||5)/100;
+        const gross=G.portfolio.filter(p=>p.status==='rented').reduce((s,p)=>s+p.monthlyRent,0);
+        const contrib=Math.round(gross*pct);
+        if(contrib>0&&G.cash>=contrib){
+          G.cash-=contrib;G.reserve=(G.reserve||0)+contrib;
+          ledger(`Repair Reserve`,-contrib);
+        }
+        break;}
+      case 'auto_sell':
+        G.portfolio.filter(p=>p.status==='rented'&&!p.listPrice).forEach(p=>{
+          const target=Number(r.params.equityTarget)||75000;
+          if(equity(p)>=target){
+            p.listPrice=p.marketVal;p.status='listed';p.listWeeks=0;
+            evFeed(`[AUTO] Listed ${p.addr} at ${fmt$(p.marketVal,true)} — equity target reached`,'info');
+          }
+        });
+        break;
+    }
+  });
+  // 1031 exchange countdown
+  if(G.pending1031){
+    G.pending1031.weeksLeft=(G.pending1031.weeksLeft||8)-1;
+    if(G.pending1031.weeksLeft<=0){
+      const tax=G.pending1031.savedTax;
+      G.cash-=tax;
+      ledger(`Capital Gains Tax`,-tax);
+      evFeed(`1031 window expired — ${fmt$(tax,true)} capital gains tax collected`,'bad');
+      G.pending1031=null;
+    }
+  }
+}
+
+function monthlyTick(){
+  if(Math.random()<.15) generateAuction();
+  processAutomation();
+
+  const hasPM=G.team.some(t=>t.type==='pm');
+  const hasBook=G.team.some(t=>t.type==='bookkeeper');
+  const txMod=hasBook?.88:1; // noi() already applies G.taxMod; txMod is bookkeeper discount only
+
+  G.portfolio.forEach(p=>{
+    if(p.status==='rented'){
+      // ── Vacancy event ──
+      const vacHit=Math.random()<(p.vacRate||HOODS[p.hood].vacBase);
+      if(vacHit){
+        if(hasPM){
+          evFeed(`Short vacancy at ${p.addr} — PM filling unit.`,'warn');
+        } else {
+          evFeed(`Vacancy at ${p.addr} — lost ${fmt$(p.monthlyRent,true)} this month.`,'warn');
+          p.status='vacant';p.tenant=null;
+        }
+      }
+      // ── Net cash flow ──
+      if(p.status==='rented'){
+        const noiVal=noi(p)*txMod;
+        G.cash+=noiVal;
+        ledger(`Net CF: ${p.addr}`,noiVal);
+      }
+      // ── Emergency repairs — draw from reserve first ──
+      if(Math.random()<.07){
+        const sev=Math.random();
+        const amt=sev>.9?ri(4000,15000):sev>.7?ri(1000,4000):ri(200,1000);
+        const lbl=sev>.9?'Major repair':'Minor repair';
+        const fromRes=Math.min(G.reserve||0,amt);
+        const fromCash=amt-fromRes;
+        G.reserve=Math.max(0,(G.reserve||0)-fromRes);
+        G.cash-=fromCash;
+        const src=fromRes>0?` (reserve covered ${fmt$(fromRes,true)})`:'';
+        evFeed(`${lbl} at ${p.addr}: −${fmt$(amt,true)}${src}`,'warn');
+        ledger(`${lbl}: ${p.addr}`,-fromCash);
+      }
+      // ── Tenant events ──
+      if(p.status==='rented'){
+        const lateProb=p.latePayProb||0.05;
+        const renewalRej=p.tenantTier==='A'?.08:p.tenantTier==='C'?.18:.13;
+        const moveoutProb=p.tenantTier==='A'?.01:p.tenantTier==='C'?.05:.03;
+        const ev=Math.random();
+        if(ev<lateProb){
+          // Late payment — collect late fee
+          const fee=ri(50,150);G.cash+=fee;
+          evFeed(`Late rent at ${p.addr} (${p.tenantTier||'B'}-Tier) — ${fmt$(fee,true)} fee collected`,'warn');
+          ledger(`Late fee: ${p.addr}`,fee);
+        } else if(ev<lateProb+.04){
+          // Lease renewal negotiation
+          const bump=Math.round(p.monthlyRent*rnd(.03,.08)/25)*25;
+          if(Math.random()>(renewalRej)){
+            p.monthlyRent+=bump;
+            evFeed(`Lease renewed at ${p.addr} — rent up ${fmt$(bump,true)}/mo`,'good');
+          } else {
+            p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
+            evFeed(`Tenant declined renewal at ${p.addr} — unit vacant`,'warn');
+          }
+        } else if(ev<lateProb+.04+moveoutProb&&!hasPM){
+          // Move-out notice (less likely with PM)
+          p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
+          evFeed(`Move-out notice at ${p.addr} — tenant leaving`,'warn');
+        }
+        // Small rent growth chance each month
+        if(Math.random()<.015){
+          const bump=Math.round(p.monthlyRent*rnd(.02,.05)/25)*25;
+          p.monthlyRent+=bump;
+          evFeed(`Rent raised at ${p.addr}: +${fmt$(bump,true)}/mo`,'good');
+        }
+      }
+    }
+    if(p.status==='listed') p.listWeeks=(p.listWeeks||0)+1;
+  });
+
+  // Loan payments + amortization
+  G.loans.filter(l=>l.status==='active').forEach(l=>{
+    G.cash-=l.payment;l.monthsPaid=(l.monthsPaid||0)+1;
+    if(!l.intOnly){const i=l.balance*(l.rate/12);l.balance=Math.max(0,l.balance-(l.payment-i));}
+    ledger(`Loan pmt: ${l.name}`,-l.payment);
+    if(l.type==='hml'&&l.monthsPaid>=l.termMonths){
+      const p=G.portfolio.find(x=>x.id===l.propId);
+      evFeed(`🚨 HML balloon due on ${p?.addr||'property'}! Refinance or sell NOW.`,'bad');
+      advise('HML Balloon Due',`Your hard money loan on <b>${p?.addr||'a property'}</b> has hit its balloon date. You must refinance into a long-term loan (Conventional or DSCR) or sell immediately to avoid default.`);
+    }
+  });
+
+  // Team weekly salaries (×4 weeks per month)
+  G.team.forEach(t=>{
+    const cost=(TEAM_TYPES[t.type]?.weeklyCost||0)*4;
+    if(cost>0){G.cash-=cost;ledger(`Salary: ${t.name}`,-cost);}
+  });
+
+  // Market cycle drift + rate movement
+  G.mktCycle=Math.max(5,Math.min(95,G.mktCycle+rnd(-4,4)));
+  if(Math.random()<.06) G.primeRate=Math.max(.03,Math.min(.12,G.primeRate+(Math.random()>.5?.0025:-.0025)));
+  updateRates();
+
+  // Random market events
+  MARKET_EVENTS.forEach(ev=>{
+    if(Math.random()<ev.prob){ev.fn();evFeed(ev.msg,ev.cls);}
+  });
+
+  // LOC monthly interest on drawn balance
+  if(G.loc&&G.loc.status==='active'&&G.loc.balance>0){
+    const interest=Math.round(G.loc.balance*(G.loc.rate/12));
+    G.cash-=interest;
+    ledger(`LOC Interest`,-interest);
+    if(interest>0) evFeed(`LOC interest: ${fmt$(interest,true)}/mo on ${fmt$(G.loc.balance,true)} balance`,'warn');
+  }
+
+  // Note payments — seller-financed sales
+  let monthlyNoteIncome=0;
+  (G.notes||[]).filter(n=>n.status==='active').forEach(n=>{
+    const interest=Math.round(n.balance*(n.rate/12));
+    const principal=Math.max(0,n.payment-interest);
+    n.balance=Math.max(0,n.balance-principal);
+    n.monthsPaid++;
+    G.cash+=n.payment;
+    monthlyNoteIncome+=n.payment;
+    if(n.balance<=0||n.monthsPaid>=n.termMonths){
+      n.status='paid';
+      evFeed(`Note fully paid off: ${n.addr}`,'good');
+    }
+  });
+  if(monthlyNoteIncome>0) ledger('Note Payments Received',monthlyNoteIncome);
+
+  // Screener: halve late pay probability portfolio-wide
+  if(G.team.some(t=>t.type==='screener')){
+    G.portfolio.filter(p=>p.status==='rented'&&p.latePayProb).forEach(p=>{
+      if(p.latePayProb>.02) p.latePayProb=Math.max(.02,p.latePayProb*.5);
+    });
+  }
+
+  // Lease expiry check
+  G.portfolio.filter(p=>p.status==='rented'&&p.leaseExpiry).forEach(p=>{
+    if(G.year===p.leaseExpiry.yr&&G.month===p.leaseExpiry.mo) handleLeaseExpiry(p);
+  });
+
+  // Market news generation (~30% of months)
+  if(Math.random()<.30) generateNews();
+
+  // Accumulate lifetime cash flow (positive months only)
+  const monthCF=portCF()+(monthlyNoteIncome||0);
+  if(monthCF>0) G.careerCF=(G.careerCF||0)+monthCF;
+
+  checkMilestones();
+  saveGame();
+}
+
+function yearlyTick(){
+  G.portfolio.forEach(p=>{
+    if(p.marketVal>0){
+      const a=HOODS[p.hood].appreci*(1+(G.mktCycle-50)/100);
+      p.marketVal=Math.round(p.marketVal*(1+a)/1000)*1000;
+    }
+  });
+  // Annual rent growth on rented properties
+  G.portfolio.filter(p=>p.status==='rented').forEach(p=>{
+    const bump=Math.round(p.monthlyRent*rnd(.02,.04)/25)*25;
+    p.monthlyRent+=bump;
+  });
+  evFeed(`Year ${G.year-1} closed — portfolio appreciated and rents grew.`,'good');
+  // Slowly decay hood trends back toward 0
+  if(G.hoodTrends) Object.keys(G.hoodTrends).forEach(k=>{
+    if(G.hoodTrends[k]>0) G.hoodTrends[k]--;
+    else if(G.hoodTrends[k]<0) G.hoodTrends[k]++;
+  });
+  checkMilestones();
+  showYearReport(G.year-1);
+  G.yearStats={acquired:0,sold:0};
+}
+
+// ── SALE EXECUTION ─────────────────────────────────
+function executeSale(propId){
+  const p=G.portfolio.find(x=>x.id===propId);if(!p)return;
+  const price=p.listPrice||p.marketVal;
+  const costs=Math.round(price*.06);      // 6% agent + closing
+  const loan=activeLoan(p);
+  const payoff=loan?loan.balance:0;
+  const net=price-costs-payoff;
+  G.cash+=net;
+  if(loan)loan.status='paid';
+  const profit=price-p.purchasePrice-(p.rehabCost||0)-costs;
+  // Capital gains tax — 15% on profit (bookkeeper reduces to 12%)
+  const hasBook=G.team.some(t=>t.type==='bookkeeper');
+  const cgRate=hasBook?.12:.15;
+  const cgTax=profit>0?Math.round(profit*cgRate):0;
+  G.cash-=cgTax;
+  if(cgTax>0) ledger(`Cap Gains Tax`,-cgTax);
+  if(profit>(G.bestDealProfit||0)) G.bestDealProfit=profit;
+  G.portfolio=G.portfolio.filter(x=>x.id!==propId);
+  if(G.yearStats) G.yearStats.sold=(G.yearStats.sold||0)+1;
+  G.lifetimeSold=(G.lifetimeSold||0)+1;
+  ledger(`Sale: ${p.addr}`,net);
+  evFeed(`SOLD ${p.addr} for ${fmt$(price,1)} — net ${fmt$(net-cgTax,1)}, profit ${fmt$(profit,1)}`,'good');
+  if(cgTax>0){
+    G.pending1031={weeksLeft:8,savedTax:cgTax,profit,addr:p.addr};
+    evFeed(`Tax: ${fmt$(cgTax,true)} capital gains (${fmtPct(cgRate)}) — 1031 exchange available for 8 weeks`,'warn');
+    advise('1031 Exchange Available',`You paid ${fmt$(cgTax,1)} in capital gains tax on ${p.addr}. A <b>1031 Exchange</b> defers all of it — simply buy a replacement property within 8 weeks and the tax is returned to you. Head to Market now.`);
+  }
+  if(profit>50000&&!cgTax) advise('Great Flip!',`You made ${fmt$(profit,1)} on ${p.addr}. That's a ${fmtPct(profit/(p.purchasePrice+(p.rehabCost||0)))} return on cost. Reinvest into another distressed deal.`);
+  checkMilestones();
+}
+
+// ── MILESTONES ─────────────────────────────────────
+const MILESTONES=[
+  {nw:100000,  msg:'$100k Net Worth',  tip:'You\'ve crossed $100k net worth. Consider adding a second property to build cash flow diversity.'},
+  {nw:250000,  msg:'$250k Net Worth',  tip:'$250k milestone! Your portfolio is generating real wealth. A DSCR loan on your next deal can scale without income verification.'},
+  {nw:500000,  msg:'Half-Million',     tip:'$500k! You\'re now firmly in the investor class. Think about a 4-plex in a B/C neighborhood for strong cash-on-cash returns.'},
+  {nw:1000000, msg:'$1M Net Worth 🎉', tip:'One million dollars in net worth. The BRRRR machine is working. Hire a bookkeeper to protect profits and a PM to go fully passive.'},
+  {nw:2500000, msg:'$2.5M Empire',     tip:'You\'ve built a $2.5M empire. At this scale, commercial real estate and syndications become viable. Consider a 1031 exchange to defer taxes on your next sale.'},
+];
+let G_milestoneIdx=0;
+function checkMilestones(){
+  const nw=netWorth();
+  while(G_milestoneIdx<MILESTONES.length&&nw>=MILESTONES[G_milestoneIdx].nw){
+    const m=MILESTONES[G_milestoneIdx];
+    evFeed(`🏆 Milestone: ${m.msg}!`,'good');
+    advise(`Milestone: ${m.msg}`,m.tip);
+    G_milestoneIdx++;
+  }
+  checkAchievements();
+  checkWin();
+}
+
+// ── SAVE / LOAD ────────────────────────────────────
+const SAVE_KEY='ree_save_v1';
+function saveGame(){
+  try{
+    const save={G,FEED:FEED.slice(0,20),midx:G_milestoneIdx,ts:Date.now()};
+    localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+  }catch(e){}
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const save=JSON.parse(raw);
+    Object.assign(G,save.G);
+    FEED.length=0;(save.FEED||[]).forEach(e=>FEED.push(e));
+    G_milestoneIdx=save.midx||0;
+    teamSeq=G.team.length?Math.max(...G.team.map(t=>t.id||0))+1:0;
+    // Defaults for fields added after initial release
+    G.rules=G.rules||[];G.reserve=G.reserve||0;G.pending1031=G.pending1031||null;
+    G.taxMod=G.taxMod||1;G.insuranceMod=G.insuranceMod||1;
+    G.loc=G.loc||{limit:0,balance:0,rate:0,status:'none'};
+    G.yearStats=G.yearStats||{acquired:0,sold:0};
+    G.hoodTrends=G.hoodTrends||{A:0,B:0,C:0,D:0};
+    G.watchlist=G.watchlist||[];
+    G.auctions=G.auctions||[];
+    G.news=G.news||[];
+    G.pendingEvents=G.pendingEvents||[];
+    if(G.won===undefined) G.won=false;
+    G.achievements=G.achievements||{};
+    G.lifetimeSold=G.lifetimeSold||0;
+    G.lifetimeRehab=G.lifetimeRehab||0;
+    G.lifetimeRefi=G.lifetimeRefi||0;
+    G.lifetimeAcquired=G.lifetimeAcquired||0;
+    G.notes=G.notes||[];
+    G.careerCF=G.careerCF||0;
+    G.bestDealProfit=G.bestDealProfit||0;
+    G.highestNW=G.highestNW||0;
+    if(G.achExpanded===undefined) G.achExpanded=false;
+    updateRates();
+    return true;
+  }catch(e){return false;}
+}
+function deleteSave(){
+  localStorage.removeItem(SAVE_KEY);
+  toast('Save deleted — refresh to start over','warn');
+}
+function hasSave(){return!!localStorage.getItem(SAVE_KEY);}
+
+// ── TEAM FUNCTIONS ─────────────────────────────────
+function renderTeam(){
+  if(G_teamTab==='auto'){renderAutomation();return;}
+  renderTeamRoster();
+}
+function renderTeamRoster(){
+  const el=document.getElementById('teamList');if(!el)return;
+  const html=[];
+  // Active roster
+  if(G.team.length){
+    html.push('<div class="sec" style="padding:8px 12px 5px"><h2>Active Roster</h2><div class="rule"></div></div>');
+    html.push('<div class="card" style="margin:0 12px 10px">');
+    G.team.forEach(t=>{
+      const def=TEAM_TYPES[t.type];
+      const cost=(def?.weeklyCost||0)*4;
+      html.push(`<div class="row" style="cursor:default">
+        <div>
+          <div class="rname">${def?.icon||''} ${t.name}</div>
+          <div class="rdetail">${def?.role||t.type} · Hired ${t.hired}</div>
+          <div class="rdetail" style="margin-top:3px;color:var(--pos)">${def?.effect||''}</div>
+        </div>
+        <div class="rright">
+          <div class="rprice">${cost?fmt$(cost,true)+'/mo':'Free'}</div>
+          <button class="mbtn sm danger" onclick="firePerson(${t.id})" style="margin-top:4px">Fire</button>
+        </div>
+      </div>`);
+    });
+    html.push('</div>');
+  }
+  // Weekly payroll total
+  const payroll=G.team.reduce((s,t)=>(TEAM_TYPES[t.type]?.weeklyCost||0)*4+s,0);
+  if(payroll>0) html.push(`<div class="subnote">Monthly payroll: <span style="color:var(--neg)">${fmt$(payroll)}</span></div>`);
+
+  // Hire cards
+  html.push('<div class="sec" style="padding:8px 12px 5px"><h2>Available to Hire</h2><div class="rule"></div></div>');
+  Object.entries(TEAM_TYPES).forEach(([k,def])=>{
+    const hired=G.team.filter(t=>t.type===k).length;
+    const atMax=hired>=def.maxHire;
+    const cost=(def.weeklyCost||0)*4;
+    html.push(`<div class="type-card${atMax?' dim':''}" style="margin:0 12px 8px;${atMax?'opacity:.5':''}">
+      <div class="tt"><span>${def.icon}</span>${def.role} ${atMax?`<span class="badge">${hired}/${def.maxHire} hired</span>`:`<span class="badge info">${cost?fmt$(cost,true)+'/mo':'Free'}</span>`}</div>
+      <div class="td">${def.desc}</div>
+      <div class="tm"><span>${def.stat}</span><span>${def.effect}</span></div>
+      ${!atMax?`<button class="mbtn sm green" style="margin-top:8px" onclick="hirePerson('${k}')">Hire →</button>`:''}
+    </div>`);
+  });
+  el.innerHTML=html.join('');
+}
+
+let teamSeq=0;
+function hirePerson(type){
+  const def=TEAM_TYPES[type];if(!def)return;
+  const hired=G.team.filter(t=>t.type===type).length;
+  if(hired>=def.maxHire){toast('Already at max for this role','warn');return;}
+  const firstNames=['Alex','Sam','Jordan','Casey','Morgan','Taylor','Jamie','Riley'];
+  const lastNames=['Chen','Rivera','Patel','Johnson','Kim','Davis','Martinez','Wilson'];
+  const name=`${pick(firstNames)} ${pick(lastNames)}`;
+  G.team.push({id:++teamSeq,type,name,hired:dStr()});
+  evFeed(`Hired ${def.role}: ${name}`,'good');
+  toast(`${name} is on the team!`,'good');
+  renderTeam();renderAll();
+}
+function firePerson(id){
+  const t=G.team.find(x=>x.id===id);if(!t)return;
+  G.team=G.team.filter(x=>x.id!==id);
+  evFeed(`${TEAM_TYPES[t.type]?.role||'Team member'} ${t.name} let go.`,'warn');
+  toast('Team member removed','warn');
+  renderTeam();renderAll();
+}
+
+// ── EVENTS / LEDGER ────────────────────────────────
+const FEED=[];
+function evFeed(msg,cls='plain'){
+  FEED.unshift({msg,cls,d:dStr()});
+  if(FEED.length>40)FEED.pop();
+}
+function ledger(desc,amt){
+  G.ledger.unshift({desc,amt,d:dStr()});
+  if(G.ledger.length>200)G.ledger.pop();
+}
+function dStr(){
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${M[G.month-1]} ${G.year}`;
+}
+
+// ── ADVISOR ────────────────────────────────────────
+function advise(h,t){
+  document.getElementById('advH').textContent=h;
+  document.getElementById('advT').innerHTML=t;
+  document.getElementById('advisor').classList.remove('hide');
+}
+function closeAdvisor(){document.getElementById('advisor').classList.add('hide');}
+
+// ── FORMAT ─────────────────────────────────────────
+function fmt$(n,short=false){
+  if(n==null)return'—';
+  const v=Math.round(n);
+  if(short)return v>=1e6?`$${(v/1e6).toFixed(1)}M`:v>=1000?`$${(v/1000).toFixed(0)}k`:`$${v}`;
+  return'$'+v.toLocaleString();
+}
+function fmtPct(n,d=1){return(n*100).toFixed(d)+'%';}
+function fmtCF(n){return(n>=0?'+':'')+fmt$(n);}
+function cColor(c){return['','neg','warn','warn','pos','pos'][c]||'';}
+
+// ── ACHIEVEMENTS ───────────────────────────────────
+const ACHIEVEMENTS=[
+  {id:'first_buy',   icon:'🏠', label:'First Purchase',    desc:'Buy your first property'},
+  {id:'first_rent',  icon:'🔑', label:'First Tenant',      desc:'Rent out a property'},
+  {id:'first_sale',  icon:'💰', label:'First Exit',        desc:'Sell your first property'},
+  {id:'first_rehab', icon:'🔨', label:'Renovator',         desc:'Complete a full rehab'},
+  {id:'first_refi',  icon:'🔄', label:'Refinancer',        desc:'Pull equity via cash-out refi'},
+  {id:'nw_100k',     icon:'💵', label:'$100K Club',        desc:'Reach $100k net worth'},
+  {id:'nw_500k',     icon:'💴', label:'Half Million',      desc:'Reach $500k net worth'},
+  {id:'nw_1m',       icon:'💎', label:'Millionaire',       desc:'Reach $1M net worth'},
+  {id:'nw_2m5',      icon:'🏆', label:'$2.5M Legend',     desc:'Reach $2.5M net worth'},
+  {id:'props_5',     icon:'🏘️', label:'Mini Portfolio',    desc:'Own 5 properties at once'},
+  {id:'props_10',    icon:'🏙️', label:'Landlord',          desc:'Own 10 properties at once'},
+  {id:'rented_5',    icon:'🗝️', label:'Rent Machine',      desc:'5 rented simultaneously'},
+  {id:'cf_5k',       icon:'📈', label:'Cash Flowing',      desc:'$5,000+/mo net cash flow'},
+  {id:'cf_10k',      icon:'🚀', label:'$10K Month',        desc:'$10,000+/mo net cash flow'},
+  {id:'a_tier_3',    icon:'⭐', label:'Premium Landlord',  desc:'3 A-tier tenants at once'},
+  {id:'hood_all',    icon:'🗺️', label:'Hood Collector',    desc:'Own in all 4 neighborhoods'},
+  {id:'loc_open',    icon:'🏦', label:'Credit Line',       desc:'Open a line of credit'},
+  {id:'team_full',   icon:'👥', label:'Full Team',         desc:'Hire 4+ different team members'},
+];
+function achCheck(id){
+  switch(id){
+    case 'first_buy':  return G.portfolio.length>=1;
+    case 'first_rent': return G.portfolio.some(p=>p.status==='rented');
+    case 'first_sale': return G.lifetimeSold>=1;
+    case 'first_rehab':return G.lifetimeRehab>=1;
+    case 'first_refi': return G.lifetimeRefi>=1;
+    case 'nw_100k':    return netWorth()>=100000;
+    case 'nw_500k':    return netWorth()>=500000;
+    case 'nw_1m':      return netWorth()>=1000000;
+    case 'nw_2m5':     return netWorth()>=2500000;
+    case 'props_5':    return G.portfolio.length>=5;
+    case 'props_10':   return G.portfolio.length>=10;
+    case 'rented_5':   return G.portfolio.filter(p=>p.status==='rented').length>=5;
+    case 'cf_5k':      return portCF()>=5000;
+    case 'cf_10k':     return portCF()>=10000;
+    case 'a_tier_3':   return G.portfolio.filter(p=>p.tenantTier==='A').length>=3;
+    case 'hood_all':   return new Set(G.portfolio.map(p=>p.hood)).size>=4;
+    case 'loc_open':   return G.loc&&G.loc.status==='active';
+    case 'team_full':  return new Set(G.team.map(t=>t.type)).size>=4;
+  }
+  return false;
+}
+function checkAchievements(){
+  let newEarned=0;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!G.achievements[a.id]&&achCheck(a.id)){
+      G.achievements[a.id]=`Y${G.year} M${G.month}`;
+      evFeed(`Achievement: ${a.icon} ${a.label}`,'good');
+      newEarned++;
+    }
+  });
+  if(newEarned) renderAchievements();
+}
+function renderAchievements(){
+  const el=document.getElementById('achieveWidget');if(!el)return;
+  const total=ACHIEVEMENTS.length,earned=Object.keys(G.achievements).length;
+  const expanded=G.achExpanded;
+  el.innerHTML=`<div class="ach-section">
+    <div class="ach-toggle" onclick="G.achExpanded=!G.achExpanded;renderAchievements()">
+      ${expanded?'▾':'▸'} Achievements — ${earned}/${total} unlocked
+    </div>
+    ${expanded?`<div class="ach-grid">${ACHIEVEMENTS.map(a=>{
+      const on=!!G.achievements[a.id];
+      return`<div class="ach-chip${on?' on':''}" title="${a.desc}${on?' · Earned '+G.achievements[a.id]:''}">
+        <div class="ach-icon">${a.icon}</div>
+        <div class="ach-lbl">${a.label}</div>
+        ${on?`<div class="ach-date">${G.achievements[a.id]}</div>`:''}
+      </div>`;
+    }).join('')}</div>`:''}
+  </div>`;
+}
+
+// ── HOOD INTELLIGENCE STRIP ─────────────────────────
+function renderHoodStrip(){
+  const el=document.getElementById('hoodStrip');if(!el)return;
+  const clrs={A:'var(--pos)',B:'var(--info)',C:'var(--warn)',D:'var(--neg)'};
+  el.innerHTML=`<div class="hood-intel">${Object.entries(HOODS).map(([k,h])=>{
+    const owned=G.portfolio.filter(p=>p.hood===k);
+    const rented=owned.filter(p=>p.status==='rented');
+    const mktListings=G.market.filter(p=>p.hood===k);
+    const avgCap=mktListings.length?mktListings.reduce((s,p)=>s+capRate({...p,marketVal:p.arv},p.ask),0)/mktListings.length:h.capBase;
+    const tr=hoodTrendArrow(k);
+    return`<div class="hi-cell">
+      <div class="hi-letter" style="color:${clrs[k]}">${k}</div>
+      <div class="hi-name">${h.name}</div>
+      <div class="hi-row">${tr} ${fmtPct(avgCap)} cap</div>
+      <div class="hi-row">${fmtPct(h.vacBase)} vac</div>
+      <div class="hi-row" style="color:${owned.length?clrs[k]:'var(--txt-dim)'}">${owned.length} owned${rented.length?` · ${rented.length} rented`:''}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── PROPERTY INSPECTION ─────────────────────────────
+const INSP_FLAGS=[
+  {label:'Foundation settling',prob:.08,extraCost:[8000,22000],icon:'⚠️'},
+  {label:'Roof replacement needed (2-3 yrs)',prob:.12,extraCost:[6000,14000],icon:'🏚️'},
+  {label:'Outdated electrical panel',prob:.10,extraCost:[4000,9000],icon:'⚡'},
+  {label:'Plumbing corrosion',prob:.09,extraCost:[3000,12000],icon:'🔧'},
+  {label:'HVAC near end of life',prob:.11,extraCost:[4000,8000],icon:'❄️'},
+  {label:'Water damage / mold risk',prob:.07,extraCost:[5000,18000],icon:'💧'},
+  {label:'Termite evidence',prob:.05,extraCost:[2000,7000],icon:'🪲'},
+];
+function getInspection(propId){
+  const p=G.market.find(x=>x.id===propId);if(!p)return;
+  if(G.cash<500){toast('Need $500 for inspection','bad');return;}
+  if(p.inspected){showInspectionReport(propId);return;}
+  G.cash-=500;
+  ledger('Inspection fee',-500);
+  // Run inspection — tighten rehab estimate, find red flags
+  const flags=INSP_FLAGS.filter(f=>Math.random()<f.prob*(p.cond===1?2.0:p.cond===2?1.5:p.cond===3?1.1:0.6));
+  const extraCost=flags.reduce((s,f)=>s+ri(f.extraCost[0],f.extraCost[1]),0);
+  // Tighten rehab range (±5% from true estimate)
+  const trueRehab=Math.round((p.rehabEst+extraCost)*rnd(.96,1.04)/100)*100;
+  p.inspected=true;
+  p.inspData={flags,extraCost,trueRehab,paid:500};
+  p.rehabEst=trueRehab; // update to true estimate
+  evFeed(`Inspection complete at ${p.addr} — ${flags.length} issue${flags.length===1?'':'s'} found`,'info');
+  showInspectionReport(propId);
+}
+function showInspectionReport(propId){
+  const p=G.market.find(x=>x.id===propId);if(!p||!p.inspData)return;
+  const d=p.inspData;
+  const clean=d.flags.length===0;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Inspection Report</h3>
+    <div style="margin-bottom:10px"><span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span> <span class="badge">${p.addr}</span></div>
+    ${clean
+      ?`<div class="insp-ok" style="margin-bottom:10px;font-size:11px">✅ No major issues found — property is in good condition.</div>`
+      :`<div style="margin-bottom:8px;font-size:10.5px;font-weight:600;color:var(--neg)">${d.flags.length} Issue${d.flags.length===1?'':'s'} Found:</div>
+      ${d.flags.map(f=>`<div class="red-flag">${f.icon} ${f.label}</div>`).join('')}`}
+    <div class="card" style="margin:10px 0">
+      <div class="frow"><span class="fl">Condition</span><span class="fv">${COND_LBL[p.cond]}</span></div>
+      <div class="frow"><span class="fl">Rehab Estimate (pre-inspection)</span><span class="fv warn">${fmt$(p.rehabEst-d.extraCost)}</span></div>
+      ${d.extraCost>0?`<div class="frow"><span class="fl">Hidden Defect Costs</span><span class="fv neg">+${fmt$(d.extraCost)}</span></div>`:''}
+      <div class="frow tot"><span class="fl">True Rehab Estimate</span><span class="fv warn">${fmt$(d.trueRehab)}</span></div>
+      <div class="frow"><span class="fl">Inspection Fee Paid</span><span class="fv">$500</span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="mbtn pri" onclick="closeModal();openBuyModal(${propId})">Make Offer →</button>
+      <button class="mbtn" onclick="closeModal()">Walk Away</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+// ── NEWS TICKER ────────────────────────────────────
+const MO_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const NEWS_TEMPLATES=[
+  {h:'Fed holds rates steady for third consecutive meeting',src:'Federal Reserve',cls:'info',sig:null},
+  {h:'Regional rent growth exceeds national average — landlords bullish',src:'Housing Pulse',cls:'good',sig:null},
+  {h:'Analysts forecast rent surge in premium neighborhoods this quarter',src:'Real Estate Wire',cls:'good',sig:{fn:'rentBoom',wks:5},lbl:'Signal: rent boom in ~5 weeks'},
+  {h:'Vacancy rates climbing in Class C properties citywide',src:'Appraisal Weekly',cls:'warn',sig:{fn:'vacancySpike',wks:4},lbl:'Signal: vacancy spike possible soon'},
+  {h:'Fed meeting minutes hint at rate increase next quarter',src:'Bloomberg',cls:'warn',sig:{fn:'rateHike',wks:4},lbl:'Signal: rate hike in ~4 weeks'},
+  {h:'Insurance carriers announce broad premium hikes across region',src:'Insurance Times',cls:'warn',sig:{fn:'insuranceSpike',wks:3},lbl:'Signal: insurance costs rising'},
+  {h:'Northbrook tech corridor attracting second major employer',src:'City Planning',cls:'good',sig:{fn:'hoodBoomB',wks:5},lbl:'Signal: Northbrook values may surge'},
+  {h:'Southgate neighborhood watch program shows measurable results',src:'Police Dept.',cls:'good',sig:{fn:'hoodBoomD',wks:6},lbl:'Signal: Southgate cap rate compression'},
+  {h:'Construction material costs declining — good quarter for renovators',src:'Trade Weekly',cls:'good',sig:null},
+  {h:'City announces property tax reassessment for residential parcels',src:'City Assessor',cls:'warn',sig:{fn:'taxAssess',wks:3},lbl:'Signal: tax increase incoming'},
+  {h:'Job market softening — economists warn of demand slowdown',src:'Economist',cls:'warn',sig:null},
+  {h:'Investor confidence high — cap rates compressing in prime hoods',src:'CRE Monitor',cls:'info',sig:null},
+  {h:'Millennials driving surge in rental demand across all price tiers',src:'Demographic Report',cls:'good',sig:null},
+  {h:'Lakeview short-term rental ban proposed — long-term landlords benefit',src:'City Council',cls:'good',sig:{fn:'hoodBoomA',wks:4},lbl:'Signal: Lakeview rents may surge'},
+  {h:'Rising construction costs squeezing new supply pipeline',src:'NAHB',cls:'info',sig:null},
+];
+function generateNews(){
+  if(!G.news) G.news=[];
+  if(!G.pendingEvents) G.pendingEvents=[];
+  const t=NEWS_TEMPLATES[Math.floor(Math.random()*NEWS_TEMPLATES.length)];
+  // Don't duplicate recent headlines
+  if(G.news.some(n=>n.h===t.h)) return;
+  const item={h:t.h,src:t.src,cls:t.cls,date:`${MO_SHORT[G.month-1]} ${G.year}`,lbl:t.lbl||null};
+  G.news.unshift(item);
+  if(G.news.length>6) G.news.pop();
+  if(t.sig){
+    const wks=t.sig.wks+ri(-1,2);
+    G.pendingEvents.push({fn:t.sig.fn,wksLeft:Math.max(2,wks)});
+  }
+}
+function firePendingEvent(ev){
+  switch(ev.fn){
+    case 'rentBoom':      rentBoom();evFeed('📰 News signal realized: rent boom hit','good');break;
+    case 'vacancySpike':  vacancySpike();evFeed('📰 News signal realized: vacancy spike','warn');break;
+    case 'rateHike':      G.primeRate=Math.min(.12,G.primeRate+.0025);updateRates();evFeed('📰 Fed rate hike materialized','warn');break;
+    case 'insuranceSpike':G.insuranceMod=(G.insuranceMod||1)*1.08;evFeed('📰 Insurance hike realized','warn');break;
+    case 'hoodBoomA':     hoodBoom('A');evFeed('📰 Lakeview boom materialized','good');break;
+    case 'hoodBoomB':     hoodBoom('B');evFeed('📰 Northbrook boom materialized','good');break;
+    case 'hoodBoomD':     hoodBoom('D');evFeed('📰 Southgate improvement materialized','good');break;
+    case 'taxAssess':     G.taxMod=(G.taxMod||1)*1.06;evFeed('📰 Tax reassessment: property taxes up 6%','warn');break;
+  }
+}
+function tickPendingEvents(){
+  (G.pendingEvents||[]).forEach(ev=>ev.wksLeft--);
+  const fired=G.pendingEvents.filter(ev=>ev.wksLeft<=0);
+  fired.forEach(ev=>firePendingEvent(ev));
+  G.pendingEvents=G.pendingEvents.filter(ev=>ev.wksLeft>0);
+}
+function renderNewsSection(){
+  const el=document.getElementById('newsSection');if(!el)return;
+  if(!G.news||!G.news.length){
+    el.innerHTML=`<div class="subnote" style="padding:3px 12px 8px;color:var(--txt-dim)">No market intelligence yet — check back as weeks pass.</div>`;
+    return;
+  }
+  el.innerHTML=`<div class="news-section">${G.news.map(n=>`
+    <div class="news-item">
+      <div class="news-dot ${n.cls}"></div>
+      <div>
+        <div class="news-headline">${n.h}</div>
+        <div class="news-meta">${n.src} · ${n.date}</div>
+        ${n.lbl?`<div class="news-signal">⚠ ${n.lbl}</div>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── LEASE MANAGEMENT ───────────────────────────────
+function calcLeaseExpiry(months){
+  if(!months) return null;
+  let mo=G.month+months, yr=G.year;
+  while(mo>12){mo-=12;yr++;}
+  return{yr,mo};
+}
+function leaseChip(p){
+  if(p.status!=='rented') return'';
+  if(p.isMonthToMonth) return`<span class="lc-chip lc-mtm">MTM</span>`;
+  if(!p.leaseExpiry) return'';
+  const moLeft=(p.leaseExpiry.yr-G.year)*12+(p.leaseExpiry.mo-G.month);
+  const cls=moLeft<=2?'lc-urgent':moLeft<=5?'lc-warn':'lc-ok';
+  return`<span class="lc-chip ${cls}">${MO_SHORT[p.leaseExpiry.mo-1]} ${p.leaseExpiry.yr} (${Math.max(0,moLeft)}mo)</span>`;
+}
+function handleLeaseExpiry(p){
+  const hasPM=G.team.some(t=>t.type==='pm');
+  const tier=p.tenantTier||'B';
+  const renewProb=tier==='A'?.87:tier==='C'?.55:.72;
+  if(hasPM||Math.random()<renewProb){
+    const bump=Math.round(p.monthlyRent*rnd(.02,.05)/25)*25;
+    p.monthlyRent+=bump;
+    p.leaseExpiry=calcLeaseExpiry(p.leaseTermMonths||12);
+    evFeed(`Lease renewed at ${p.addr} — rent up ${fmt$(bump,true)}/mo to ${fmt$(p.monthlyRent,true)}`,'good');
+  } else {
+    p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
+    p.leaseExpiry=null;p.isMonthToMonth=false;
+    evFeed(`Tenant did not renew at ${p.addr} — unit vacant`,'warn');
+  }
+}
+
+// ── AUCTIONS ───────────────────────────────────────
+function generateAuction(){
+  if((G.auctions||[]).filter(a=>a.status==='open').length>=2) return;
+  const avail=G.market.filter(p=>!p.isAuction&&!p.isWholesale&&p.wom>=3);
+  if(!avail.length) return;
+  const p=avail[Math.floor(Math.random()*avail.length)];
+  p.isAuction=true;
+  const startBid=Math.round(p.ask*rnd(.65,.80)/1000)*1000;
+  const aiMax=Math.round(p.ask*rnd(.82,.98)/1000)*1000;
+  G.auctions.push({propId:p.id,weeksLeft:2,startBid,playerBid:0,aiMax,status:'open'});
+  evFeed(`🔨 Auction: ${p.addr} — starting ${fmt$(startBid,true)}, closes in 2 weeks`,'info');
+}
+function tickAuctions(){
+  (G.auctions||[]).forEach(a=>{
+    if(a.status!=='open') return;
+    a.weeksLeft--;
+    if(a.weeksLeft>0) return;
+    const p=G.market.find(x=>x.id===a.propId);
+    if(a.playerBid>0&&a.playerBid>=a.aiMax){
+      a.status='won';
+      executeAuctionWin(a);
+    } else if(a.playerBid>0){
+      a.status='lost';
+      if(p) p.isAuction=false;
+      evFeed(`🔨 Outbid on ${p?.addr||'auction property'} — AI paid ${fmt$(a.aiMax,true)}`,'warn');
+    } else {
+      a.status='passed';
+      if(p) p.isAuction=false;
+    }
+  });
+  G.auctions=(G.auctions||[]).filter(a=>a.status==='open');
+}
+function executeAuctionWin(auc){
+  const p=G.market.find(x=>x.id===auc.propId);
+  if(!p){evFeed('Auction property unavailable','warn');return;}
+  const price=auc.playerBid;
+  const closing=Math.round(price*.025/100)*100;
+  const totalCash=price+closing;
+  if(G.cash<totalCash){
+    evFeed(`Won auction but need ${fmt$(totalCash,true)} — voided (insufficient cash)`,'warn');
+    G.market=G.market.filter(x=>x.id!==p.id);
+    return;
+  }
+  G.cash-=totalCash;
+  p.purchasePrice=price; p.cashInvested=totalCash;
+  p.status=p.cond<5?'rehab':'vacant';
+  if(p.status==='rehab'){
+    p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];
+    p.rehabCost=p.rehabEst; p.cashInvested+=p.rehabEst;
+  }
+  G.market=G.market.filter(x=>x.id!==p.id);
+  G.portfolio.push(p);
+  if(G.yearStats) G.yearStats.acquired=(G.yearStats.acquired||0)+1;
+  G.lifetimeAcquired=(G.lifetimeAcquired||0)+1;
+  ledger(`Auction Win: ${p.addr}`,-totalCash);
+  evFeed(`🏆 WON auction: ${p.addr} for ${fmt$(price,true)} — ${fmtPct(1-price/p.arv)} below ARV`,'good');
+  checkAchievements();
+  renderAll();
+}
+function openBidModal(propId){
+  const p=G.market.find(x=>x.id===propId);
+  const auc=(G.auctions||[]).find(a=>a.propId===propId&&a.status==='open');
+  if(!p||!auc){toast('Auction not active','bad');return;}
+  const minBid=Math.max(auc.startBid,(auc.playerBid||0)+1000);
+  const cashNeeded=Math.round(minBid*1.025);
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>🔨 Auction Bid</h3>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span>
+      <span class="badge">${p.ptype}</span>
+      <span class="badge ${cColor(p.cond)}">${COND_LBL[p.cond]}</span>
+      <span class="auc-badge">⏱ ${auc.weeksLeft} wk${auc.weeksLeft===1?'':'s'} left</span>
+    </div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Address</span><span class="fv">${p.addr}</span></div>
+      <div class="frow"><span class="fl">ARV</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+      <div class="frow"><span class="fl">Rehab Estimate</span><span class="fv warn">${fmt$(p.rehabEst)}</span></div>
+      <div class="frow"><span class="fl">Starting Bid</span><span class="fv">${fmt$(auc.startBid)}</span></div>
+      ${auc.playerBid?`<div class="frow"><span class="fl">Your Bid</span><span class="fv info">${fmt$(auc.playerBid)}</span></div>`:''}
+      <div class="frow tot"><span class="fl">Min Next Bid</span><span class="fv warn">${fmt$(minBid)}</span></div>
+    </div>
+    <div class="dec" style="margin-bottom:10px">
+      <div class="dt">⚠ Auction Rules</div>
+      <div class="db">Cash or Hard Money financing only · No inspection available · 2.5% closing costs added at win · If you can't pay when you win, the deal is voided</div>
+    </div>
+    <div class="fq" style="margin-bottom:10px">
+      <div class="fqL">Your Bid</div>
+      <input class="fqI" type="number" id="bidAmt" value="${minBid}" step="1000" min="${minBid}">
+      <div class="fqS">Cash on hand: ${fmt$(G.cash)} · Cash needed at win: ~${fmt$(cashNeeded)}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="mbtn green" ${G.cash>=cashNeeded?'':'disabled'} onclick="placeBid(${propId})">Place Bid →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>
+    ${G.cash<cashNeeded?`<div class="subnote" style="color:var(--neg);padding:5px 0">⚠ Need ~${fmt$(cashNeeded-G.cash)} more cash.</div>`:''}`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function placeBid(propId){
+  const auc=(G.auctions||[]).find(a=>a.propId===propId&&a.status==='open');
+  if(!auc){toast('Auction expired','bad');return;}
+  const bid=parseInt(document.getElementById('bidAmt')?.value)||0;
+  const minBid=Math.max(auc.startBid,(auc.playerBid||0)+1000);
+  if(bid<minBid){toast(`Min bid: ${fmt$(minBid,true)}`,'bad');return;}
+  auc.playerBid=bid;
+  const p=G.market.find(x=>x.id===propId);
+  evFeed(`Bid placed on ${p?.addr||'auction'}: ${fmt$(bid,true)} — ${auc.weeksLeft} wk${auc.weeksLeft===1?'':'s'} left`,'info');
+  closeModal();toast(`Bid of ${fmt$(bid,true)} placed!`,'good');renderMarket();
+}
+
+// ── WHOLESALER ─────────────────────────────────────
+function sourceWholesaleDeal(){
+  const hasRealtor=G.team.some(t=>t.type==='realtor');
+  const cost=hasRealtor?500:1500;
+  const activeWhl=G.market.filter(p=>p.isWholesale).length;
+  if(activeWhl>=2){toast('Already have 2 wholesale deals active','bad');return;}
+  if(G.cash<cost){toast(`Need ${fmt$(cost,true)} to source a deal`,'bad');return;}
+  G.cash-=cost;
+  ledger('Wholesaler fee',-cost);
+  const hk=pick(['B','C','C','D','D']);
+  const cond=pick([1,1,1,2,2]);
+  const p=genProp(hk,cond);
+  p.isWholesale=true; p.offMkt=true;
+  p.ask=Math.round(p.arv*rnd(.52,.67)/1000)*1000;
+  p.wom=0;
+  G.market.push(p);
+  evFeed(`Wholesaler found: ${p.addr} — ${fmt$(p.ask,true)} ask (ARV ${fmt$(p.arv,true)}, ${fmtPct(1-p.ask/p.arv)} below)`,'good');
+  toast('Off-market deal found!','good');
+  renderMarket();
+}
+
+// ── SELLER FINANCING ───────────────────────────────
+function executeSFSale(propId){
+  const p=G.portfolio.find(x=>x.id===propId);if(!p)return;
+  const price=p.listPrice||p.marketVal;
+  const down=Math.round(price*.20/1000)*1000;
+  const principal=price-down;
+  const rate=.07;
+  const pmt=Math.round(mpmt(principal,rate,360));
+  const loan=activeLoan(p);
+  let netDown=down;
+  if(loan){
+    if(down<loan.balance){evFeed(`Down payment (${fmt$(down,true)}) too small to clear your loan on ${p.addr}`,'bad');return;}
+    netDown=down-loan.balance;
+    loan.status='paid';
+  }
+  G.cash+=netDown;
+  G.notes.push({
+    id:++G.lidSeq,addr:p.addr,balance:principal,originalBalance:principal,
+    rate,payment:pmt,termMonths:360,monthsPaid:0,
+    buyerName:`${pick(FNAMES)} ${pick(LNAMES)}`,status:'active'
+  });
+  const profit=Math.round(price-p.purchasePrice-(p.rehabCost||0)-price*.06);
+  if(profit>(G.bestDealProfit||0)) G.bestDealProfit=profit;
+  G.portfolio=G.portfolio.filter(x=>x.id!==propId);
+  G.lifetimeSold=(G.lifetimeSold||0)+1;
+  if(G.yearStats) G.yearStats.sold=(G.yearStats.sold||0)+1;
+  ledger(`SF Sale: ${p.addr} (20% down)`,netDown);
+  evFeed(`Seller-financed ${p.addr} — ${fmt$(down,true)} down · ${fmt$(pmt,true)}/mo × 30yr at 7%`,'good');
+  checkAchievements();renderAll();
+}
+
+function renderNotesSection(){
+  const hdr=document.getElementById('noteSecHdr');
+  const el=document.getElementById('notesSection');if(!el)return;
+  const active=(G.notes||[]).filter(n=>n.status==='active');
+  if(hdr) hdr.style.display=active.length?'':'none';
+  if(!active.length){el.innerHTML='';return;}
+  const totalIncome=active.reduce((s,n)=>s+n.payment,0);
+  el.innerHTML=`
+    <div class="strip" style="margin-bottom:10px">
+      <div class="cell"><div class="lbl">Notes</div><div class="val">${active.length}</div></div>
+      <div class="cell"><div class="lbl">Monthly Income</div><div class="val pos">${fmt$(totalIncome,true)}/mo</div></div>
+      <div class="cell"><div class="lbl">Total Principal</div><div class="val">${fmt$(active.reduce((s,n)=>s+n.balance,0),true)}</div></div>
+    </div>
+    ${active.map(n=>{
+      const pct=Math.min(100,Math.round(n.monthsPaid/n.termMonths*100));
+      const rem=n.termMonths-n.monthsPaid;
+      return `<div class="note-card">
+        <div class="note-addr">${n.addr}</div>
+        <div class="frow"><span class="fl">Buyer</span><span class="fv note-meta">${n.buyerName}</span></div>
+        <div class="frow"><span class="fl">Monthly Payment</span><span class="fv pos">${fmt$(n.payment,true)}/mo</span></div>
+        <div class="frow"><span class="fl">Balance</span><span class="fv">${fmt$(n.balance,true)}</span></div>
+        <div class="frow"><span class="fl">Remaining</span><span class="fv note-meta">${Math.floor(rem/12)}yr ${rem%12}mo (${rem} pmts)</span></div>
+        <div class="note-prog"><div class="note-bar" style="width:${pct}%"></div></div>
+        <div class="note-meta" style="margin-top:2px">${pct}% paid off</div>
+      </div>`;
+    }).join('')}`;
+}
+
+function renderCareerStats(){
+  const el=document.getElementById('careerStats');if(!el)return;
+  const nw=netWorth();
+  if(nw>(G.highestNW||0)) G.highestNW=nw;
+  const totalBought=(G.lifetimeAcquired||0)+G.portfolio.length;
+  const wkElapsed=Math.max(1,((G.year-2024)*52)+(G.month-1)*4+(G.week-1));
+  const nwPct=Math.min(100,Math.round(nw/50000));
+  el.innerHTML=`
+    <div class="cs-grid">
+      <div class="cs-cell"><div class="cs-val">${totalBought}</div><div class="cs-lbl">Props Acquired</div></div>
+      <div class="cs-cell"><div class="cs-val">${G.lifetimeSold||0}</div><div class="cs-lbl">Props Sold</div></div>
+      <div class="cs-cell"><div class="cs-val">${(G.bestDealProfit||0)>0?fmt$(G.bestDealProfit,true):'—'}</div><div class="cs-lbl">Best Deal</div></div>
+      <div class="cs-cell"><div class="cs-val">${(G.careerCF||0)>0?fmt$(G.careerCF,true):'$0'}</div><div class="cs-lbl">Lifetime CF</div></div>
+    </div>
+    <div class="cs-prog-wrap">
+      <div style="display:flex;justify-content:space-between;font-size:10px">
+        <span style="font-weight:600">Progress to $5M Net Worth</span>
+        <span style="color:var(--txt-dim)">${fmt$(nw,true)} / $5M</span>
+      </div>
+      <div class="cs-prog-bar"><div class="cs-prog-fill" style="width:${nwPct}%"></div></div>
+      <div class="note-meta" style="margin-top:2px">Peak: ${fmt$(G.highestNW||nw,true)} · Week ${wkElapsed} played</div>
+    </div>`;
+}
+
+// ── DEAL CALCULATOR ────────────────────────────────
+function openDealCalc(){
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Deal Analyzer</h3>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">Purchase Price</div><input class="fqI" type="number" id="dc-price" value="150000" oninput="calcDeal()"></div>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">After Repair Value (ARV)</div><input class="fqI" type="number" id="dc-arv" value="200000" oninput="calcDeal()"></div>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">Monthly Rent</div><input class="fqI" type="number" id="dc-rent" value="1600" oninput="calcDeal()"></div>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">Rehab Cost</div><input class="fqI" type="number" id="dc-rehab" value="30000" oninput="calcDeal()"></div>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">Down Payment %</div><input class="fqI" type="number" id="dc-down" value="20" step="5" min="0" max="100" oninput="calcDeal()"></div>
+    <div class="fq" style="margin-bottom:10px"><div class="fqL">Interest Rate %</div><input class="fqI" type="number" id="dc-rate" value="${(LOANS.conv.rate*100).toFixed(2)}" step="0.25" oninput="calcDeal()"></div>
+    <div class="sec" style="padding:0 0 6px"><h2>Analysis</h2><div class="rule"></div></div>
+    <div id="dc-result" style="background:var(--surface2);border-radius:7px;padding:6px 12px;margin-bottom:12px"></div>
+    <button class="mbtn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+  calcDeal();
+}
+window.calcDeal=function(){
+  const price=parseFloat(document.getElementById('dc-price')?.value)||0;
+  const arv=parseFloat(document.getElementById('dc-arv')?.value)||price;
+  const rent=parseFloat(document.getElementById('dc-rent')?.value)||0;
+  const rehab=parseFloat(document.getElementById('dc-rehab')?.value)||0;
+  const downPct=(parseFloat(document.getElementById('dc-down')?.value)||20)/100;
+  const rate=(parseFloat(document.getElementById('dc-rate')?.value)||7.5)/100;
+  const allIn=price+rehab;
+  const principal=price*(1-downPct);
+  const cashNeeded=Math.round(price*downPct+rehab+price*.025);
+  const pmt=principal>0?mpmt(principal,rate,360):0;
+  const sqft=1200, vacRate=.06;
+  const noiVal=rent-rent*vacRate-arv*.011/12-sqft*.042-sqft*.083;
+  const annNOI=noiVal*12;
+  const cf=noiVal-pmt;
+  const coc=cashNeeded>0?(cf*12)/cashNeeded:0;
+  const capV=arv>0?annNOI/arv:0;
+  const dscr=pmt>0?noiVal/pmt:999;
+  const spread=arv-allIn;
+  const c=v=>v>=0?'var(--pos)':'var(--neg)';
+  const el=document.getElementById('dc-result');
+  if(!el) return;
+  el.innerHTML=`
+    <div class="calc-row"><span style="color:var(--txt-mid)">All-In Cost</span><span style="font-family:var(--mono)">${fmt$(Math.round(allIn))}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Cash Needed</span><span style="font-family:var(--mono)">${fmt$(cashNeeded)}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Equity / Spread</span><span style="font-family:var(--mono);color:${c(spread)}">${fmt$(Math.round(spread))}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Monthly NOI</span><span style="font-family:var(--mono);color:${c(noiVal)}">${fmtCF(Math.round(noiVal))}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Mortgage Payment</span><span style="font-family:var(--mono)">${pmt?fmt$(Math.round(pmt))+'/mo':'(cash)'}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Net Cash Flow</span><span style="font-family:var(--mono);color:${c(cf)}">${fmtCF(Math.round(cf))}/mo</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Cap Rate</span><span style="font-family:var(--mono);color:${capV>=.06?'var(--pos)':capV>=.04?'var(--warn)':'var(--neg)'}">${fmtPct(capV)}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">Cash-on-Cash</span><span style="font-family:var(--mono);color:${coc>=.08?'var(--pos)':coc>=.05?'var(--warn)':'var(--neg)'}">${fmtPct(coc)}</span></div>
+    <div class="calc-row"><span style="color:var(--txt-mid)">DSCR</span><span style="font-family:var(--mono);color:${dscr>=1.25?'var(--pos)':dscr>=1?'var(--warn)':'var(--neg)'}">${dscr===999?'∞':dscr.toFixed(2)}×</span></div>`;
+};
+
+// ── WATCH LIST ─────────────────────────────────────
+function toggleWatch(propId){
+  const idx=G.watchlist.indexOf(propId);
+  if(idx>=0) G.watchlist.splice(idx,1);
+  else G.watchlist.push(propId);
+  renderMarket();
+}
+
+// ── WIN CONDITION ──────────────────────────────────
+function checkWin(){
+  if(G.won) return;
+  if(netWorth()<5000000) return;
+  G.won=true;
+  const sc=portfolioScore();
+  const gradeClr=sc.grade.startsWith('A')?'var(--pos)':sc.grade.startsWith('B')?'var(--info)':sc.grade.startsWith('C')?'var(--warn)':'var(--neg)';
+  const yrs=G.year-2024;
+  const tot=G.portfolio.reduce((s,p)=>s+(p.marketVal||0),0);
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <div style="text-align:center;padding:18px 0 10px">
+      <div style="font-size:52px;line-height:1">🏆</div>
+      <div style="font-family:var(--mono);font-size:36px;font-weight:700;margin:6px 0 2px;color:#f5c518">$5M REACHED</div>
+      <div style="font-size:11px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase">Real Estate Empire Built</div>
+    </div>
+    <div style="text-align:center;margin:10px 0 14px;padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--line)">
+      <div style="font-family:var(--mono);font-size:44px;font-weight:700;color:${gradeClr};line-height:1">${sc.grade}</div>
+      <div style="font-size:10px;color:var(--txt-dim);margin-top:4px">Final Portfolio Grade · ${sc.score}/100</div>
+    </div>
+    <div class="card" style="margin:0 0 14px">
+      <div class="frow"><span class="fl">Net Worth</span><span class="fv pos">${fmt$(netWorth())}</span></div>
+      <div class="frow"><span class="fl">Portfolio Value</span><span class="fv">${fmt$(tot)}</span></div>
+      <div class="frow"><span class="fl">Properties Owned</span><span class="fv">${G.portfolio.length}</span></div>
+      <div class="frow"><span class="fl">Years to $5M</span><span class="fv">${yrs} year${yrs===1?'':'s'}</span></div>
+      <div class="frow"><span class="fl">Total Acquired</span><span class="fv">${G.lifetimeAcquired||0} deals</span></div>
+      <div class="frow tot"><span class="fl">Cash on Hand</span><span class="fv pos">${fmt$(G.cash)}</span></div>
+    </div>
+    <button class="mbtn pri wide" onclick="closeModal()" style="margin-bottom:8px">Play On →</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+  evFeed('🏆 $5M NET WORTH ACHIEVED — Empire built!','good');
+  saveGame();
+}
+
+// ── TENANT QUALITY TIERS ───────────────────────────
+const TENANT_TIERS={
+  A:{label:'Premium',color:'var(--pos)',vacMult:.50,lateProb:.02,rentMult:.95,desc:'Low vacancy · 2% late pay · Rent −5%'},
+  B:{label:'Standard',color:'var(--info)',vacMult:1.0,lateProb:.08,rentMult:1.0,desc:'Normal vacancy · 8% late pay · Market rent'},
+  C:{label:'Fast Fill',color:'var(--neg)',vacMult:1.6,lateProb:.18,rentMult:1.08,desc:'High vacancy · 18% late pay · Rent +8%'},
+};
+function openTenantTierModal(propId){
+  const p=G.portfolio.find(x=>x.id===propId);if(!p)return;
+  // Screener on team → auto A-tier, skip picker
+  if(G.team.some(t=>t.type==='screener')){
+    p.tenantTier='A';p.vacRate=HOODS[p.hood].vacBase*.5;p.latePayProb=.02;
+    openRentModal(propId);return;
+  }
+  const hood=HOODS[p.hood];
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Choose Tenant Quality</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Screening tier affects vacancy rate, late payment risk, and achievable rent. Higher quality = more stable income; fast-fill = higher yield but more risk.</div></div>
+    <div class="tier-grid">
+      ${Object.entries(TENANT_TIERS).map(([k,t])=>{
+        const vac=fmtPct(hood.vacBase*t.vacMult);
+        const rent=fmt$(Math.round(p.monthlyRent*t.rentMult/25)*25,true);
+        return`<div class="tier-card" onclick="selectTenantTier(${propId},'${k}')">
+          <div class="tier-ltr" style="color:${t.color}">${k}</div>
+          <div class="tier-name">${t.label}</div>
+          <div class="tier-stat">Vacancy<br><b>${vac}</b></div>
+          <div class="tier-stat" style="margin-top:4px">Late Pay<br><b>${fmtPct(t.lateProb)}</b></div>
+          <div class="tier-stat" style="margin-top:4px">Rent<br><b>${rent}/mo</b></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="mbtn" onclick="closeModal()">Cancel</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+function selectTenantTier(propId,tier){
+  const p=G.portfolio.find(x=>x.id===propId);if(!p)return;
+  const t=TENANT_TIERS[tier];
+  p.tenantTier=tier;
+  p.vacRate=HOODS[p.hood].vacBase*t.vacMult;
+  p.latePayProb=t.lateProb;
+  p.monthlyRent=Math.round(p.monthlyRent*t.rentMult/25)*25;
+  closeModal();
+  openRentModal(propId);
+}
+
+function hoodTrendArrow(hk){
+  const t=(G.hoodTrends||{})[hk]||0;
+  if(t>=2) return'<span class="trend-up2">↑↑</span>';
+  if(t===1) return'<span class="trend-up1">↑</span>';
+  if(t===-1) return'<span class="trend-dn1">↓</span>';
+  if(t<=-2) return'<span class="trend-dn2">↓↓</span>';
+  return'<span class="trend-flat">→</span>';
+}
+
+// ── PORTFOLIO HEALTH SCORE ─────────────────────────
+function portfolioScore(){
+  const rented=G.portfolio.filter(p=>p.status==='rented');
+  if(!G.portfolio.length) return{score:0,grade:'—',pts:{coc:0,dscr:0,vac:0,dte:0,div:0},vals:{coc:0,dscr:0,vac:0,dte:0}};
+
+  // Cash-on-Cash (0-20 pts)
+  let avgCoC=0;
+  if(rented.length){
+    avgCoC=rented.reduce((s,p)=>{
+      const l=activeLoan(p),cf=noi(p)-(l?l.payment:0);
+      return s+(p.cashInvested>0?cf*12/p.cashInvested:0);
+    },0)/rented.length;
+  }
+  const cocPts=avgCoC>=.10?20:avgCoC>=.07?17:avgCoC>=.05?13:avgCoC>=.03?9:avgCoC>=.01?5:2;
+
+  // DSCR avg (0-20 pts)
+  const activeLoans=G.loans.filter(l=>l.status==='active'&&l.payment>0);
+  let avgDSCR=999;
+  if(activeLoans.length){
+    avgDSCR=activeLoans.reduce((s,l)=>{
+      const p=G.portfolio.find(x=>x.id===l.propId);
+      return s+(p?noi(p)/l.payment:1.5);
+    },0)/activeLoans.length;
+  }
+  const dscrPts=avgDSCR>=1.5?20:avgDSCR>=1.25?16:avgDSCR>=1.0?10:avgDSCR>=.9?5:0;
+
+  // Vacancy rate avg (0-20 pts)
+  const avgVac=G.portfolio.reduce((s,p)=>s+(p.vacRate||HOODS[p.hood].vacBase),0)/G.portfolio.length;
+  const vacPts=avgVac<.04?20:avgVac<.06?17:avgVac<.09?13:avgVac<.12?9:avgVac<.15?5:2;
+
+  // Debt-to-equity (0-20 pts)
+  const eq=totalEquity(),debt=totalDebt();
+  const dte=eq>0?debt/eq:debt>0?2:0;
+  const dtePts=dte<.3?20:dte<.5?17:dte<.7?13:dte<1.0?9:dte<1.5?5:2;
+
+  // Diversification (0-20 pts)
+  const hoods=new Set(G.portfolio.map(p=>p.hood)).size;
+  const types=new Set(G.portfolio.map(p=>p.ptype)).size;
+  const n=G.portfolio.length;
+  const divPts=hoods>=3&&types>=2?20:hoods>=3||types>=2?16:hoods>=2&&n>=3?13:hoods>=2?10:n>=2?7:n>=1?4:0;
+
+  const score=cocPts+dscrPts+vacPts+dtePts+divPts;
+  const grade=score>=90?'A+':score>=85?'A':score>=80?'A−':score>=75?'B+':score>=70?'B':score>=65?'B−':score>=58?'C+':score>=52?'C':score>=45?'C−':score>=35?'D':'F';
+  return{score,grade,pts:{coc:cocPts,dscr:dscrPts,vac:vacPts,dte:dtePts,div:divPts},
+    vals:{coc:avgCoC,dscr:avgDSCR,vac:avgVac,dte}};
+}
+
+function renderScoreWidget(){
+  const el=document.getElementById('scoreWidget');if(!el)return;
+  if(!G.portfolio.length){
+    el.innerHTML='<div class="subnote" style="padding:4px 12px 8px">Buy your first property to unlock portfolio health tracking.</div>';
+    return;
+  }
+  const sc=portfolioScore();
+  const gradeClr=sc.grade.startsWith('A')?'var(--pos)':sc.grade.startsWith('B')?'var(--info)':sc.grade.startsWith('C')?'var(--warn)':'var(--neg)';
+  el.innerHTML=`<div class="score-widget">
+    <div class="score-head">
+      <div><div class="score-grade" style="color:${gradeClr}">${sc.grade}</div><div class="score-label">Portfolio Grade</div></div>
+      <div style="text-align:right"><div class="score-num" style="font-size:22px;font-weight:700;color:${gradeClr}">${sc.score}</div><div class="score-label">/ 100 pts</div></div>
+    </div>
+    ${mkScoreRow('Cash-on-Cash Return',sc.pts.coc,20,fmtPct(sc.vals.coc))}
+    ${mkScoreRow('DSCR Coverage',sc.pts.dscr,20,sc.vals.dscr===999?'∞':sc.vals.dscr.toFixed(2)+'×')}
+    ${mkScoreRow('Avg Vacancy Rate',sc.pts.vac,20,fmtPct(sc.vals.vac))}
+    ${mkScoreRow('Debt / Equity',sc.pts.dte,20,fmtPct(sc.vals.dte))}
+    ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ptype)).size+' types')}
+    <div style="height:6px"></div>
+  </div>`;
+}
+
+function mkScoreRow(lbl,pts,max,val){
+  const pct=Math.round((pts/max)*100);
+  const clr=pts>=max*.8?'var(--pos)':pts>=max*.6?'var(--warn)':'var(--neg)';
+  return`<div class="score-row">
+    <div class="score-row-head"><span class="score-row-lbl">${lbl}</span><span class="score-row-val" style="color:${clr}">${pts}/${max} · ${val}</span></div>
+    <div class="mkt-track"><div class="mkt-fill" style="width:${pct}%;background:${clr}"></div></div>
+  </div>`;
+}
+
+// ── YEAR-END REPORT ────────────────────────────────
+function showYearReport(yr){
+  if(!G.portfolio.length) return;
+  const sc=portfolioScore();
+  const gradeClr=sc.grade.startsWith('A')?'var(--pos)':sc.grade.startsWith('B')?'var(--info)':sc.grade.startsWith('C')?'var(--warn)':'var(--neg)';
+  const annNOI=G.portfolio.filter(p=>p.status==='rented').reduce((s,p)=>s+noi(p)*12,0);
+  const annDebt=totalDSvc()*12;
+  const annCF=annNOI-annDebt;
+  const annAppr=G.portfolio.reduce((s,p)=>s+(p.marketVal>0?p.marketVal*HOODS[p.hood].appreci:0),0);
+  const ys=G.yearStats||{};
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Year ${yr} in Review</h3>
+    <div style="text-align:center;padding:14px 0 10px;margin:8px 0 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--line)">
+      <div style="font-family:var(--mono);font-size:52px;font-weight:700;line-height:1;color:${gradeClr}">${sc.grade}</div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt-dim);margin-top:5px">Portfolio Grade · ${sc.score}/100</div>
+    </div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Properties Owned</span><span class="fv">${G.portfolio.length}</span></div>
+      <div class="frow"><span class="fl">Acquired This Year</span><span class="fv pos">+${ys.acquired||0}</span></div>
+      <div class="frow"><span class="fl">Sold This Year</span><span class="fv">${ys.sold||0}</span></div>
+      <div class="frow"><span class="fl">Est. Annual NOI</span><span class="fv pos">+${fmt$(Math.round(annNOI))}</span></div>
+      <div class="frow"><span class="fl">Annual Debt Service</span><span class="fv neg">−${fmt$(Math.round(annDebt))}</span></div>
+      <div class="frow tot"><span class="fl">Net Annual Cash Flow</span><span class="fv ${annCF>=0?'pos':'neg'}">${fmtCF(Math.round(annCF))}</span></div>
+      <div class="frow"><span class="fl">Portfolio Appreciation</span><span class="fv pos">+${fmt$(Math.round(annAppr))}</span></div>
+      <div class="frow tot"><span class="fl">Total Wealth Created</span><span class="fv pos">+${fmt$(Math.round(annCF+annAppr))}</span></div>
+    </div>
+    <div class="sec" style="padding:0 0 5px"><h2>Health Breakdown</h2><div class="rule"></div></div>
+    <div class="score-widget" style="margin:0 0 12px">
+      ${mkScoreRow('Cash-on-Cash Return',sc.pts.coc,20,fmtPct(sc.vals.coc))}
+      ${mkScoreRow('DSCR Coverage',sc.pts.dscr,20,sc.vals.dscr===999?'∞':sc.vals.dscr.toFixed(2)+'×')}
+      ${mkScoreRow('Avg Vacancy Rate',sc.pts.vac,20,fmtPct(sc.vals.vac))}
+      ${mkScoreRow('Debt / Equity',sc.pts.dte,20,fmtPct(sc.vals.dte))}
+      ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ptype)).size+' types')}
+      <div style="height:4px"></div>
+    </div>
+    <button class="mbtn pri wide" onclick="closeModal()">Start Year ${yr+1} →</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+// ── LINE OF CREDIT ─────────────────────────────────
+function applyLOC(){
+  const nw=netWorth();
+  if(nw<25000){toast('Need $25k+ net worth to qualify','bad');return;}
+  G.loc.limit=Math.round(Math.min(500000,nw*.20)/1000)*1000;
+  G.loc.rate=G.primeRate+.025;
+  G.loc.status='active';
+  G.loc.balance=0;
+  evFeed(`Credit line approved — ${fmt$(G.loc.limit,true)} at ${fmtPct(G.loc.rate)}`,'good');
+  toast(`LOC approved: ${fmt$(G.loc.limit,true)}`,'good');
+  renderFin();
+}
+
+function openLOCModal(){
+  if(G.loc.status!=='active'){
+    const nw=netWorth();
+    const est=Math.round(Math.min(500000,nw*.20)/1000)*1000;
+    document.getElementById('modalBox').innerHTML=`
+      <div class="x" onclick="closeModal()">×</div>
+      <h3>Business Line of Credit</h3>
+      <div class="dec" style="margin:8px 0 10px">
+        <div class="dt">💡 What is a LOC?</div>
+        <div class="db">A revolving credit line lets you draw cash instantly for bridge financing, down payments, or emergencies — then repay from rental income. Interest charged monthly on drawn balance only.</div>
+      </div>
+      <div class="card" style="margin:0 0 12px">
+        <div class="frow"><span class="fl">Your Net Worth</span><span class="fv">${fmt$(nw)}</span></div>
+        <div class="frow"><span class="fl">Estimated Limit (20% NW)</span><span class="fv pos">${fmt$(est)}</span></div>
+        <div class="frow tot"><span class="fl">Interest Rate</span><span class="fv">${fmtPct(G.primeRate+.025)} (Prime + 2.5%)</span></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="mbtn green" onclick="closeModal();applyLOC()">${nw>=25000?'Apply for Credit Line →':'Need $25k net worth'}</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>`;
+    document.getElementById('modalOv').classList.remove('hide');
+    return;
+  }
+  const avail=G.loc.limit-G.loc.balance;
+  const interest=Math.round(G.loc.balance*(G.loc.rate/12));
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Credit Line</h3>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Credit Limit</span><span class="fv">${fmt$(G.loc.limit)}</span></div>
+      <div class="frow"><span class="fl">Outstanding Balance</span><span class="fv ${G.loc.balance>0?'neg':''}">${fmt$(G.loc.balance)}</span></div>
+      <div class="frow"><span class="fl">Available to Draw</span><span class="fv pos">${fmt$(avail)}</span></div>
+      <div class="frow tot"><span class="fl">Monthly Interest</span><span class="fv ${interest>0?'neg':''}">${interest?fmt$(interest)+'/mo':'$0'}</span></div>
+    </div>
+    ${avail>0?`<div class="fq"><div class="fqL">Draw Amount</div>
+      <input class="fqI" type="number" id="locDrawAmt" value="${Math.min(10000,avail)}" min="1" max="${avail}">
+      <div class="fqS">Available: ${fmt$(avail)} · Cash: ${fmt$(G.cash)}</div></div>
+      <button class="mbtn green" onclick="doLOCDraw()" style="margin-bottom:10px;width:100%">Draw Cash →</button>`:''}
+    ${G.loc.balance>0?`<div class="fq"><div class="fqL">Repay Amount</div>
+      <input class="fqI" type="number" id="locRepayAmt" value="${Math.min(G.cash,G.loc.balance)}" min="1" max="${Math.min(G.cash,G.loc.balance)}">
+      <div class="fqS">Balance: ${fmt$(G.loc.balance)} · Cash: ${fmt$(G.cash)}</div></div>
+      <button class="mbtn warn" onclick="doLOCRepay()" style="margin-bottom:10px;width:100%">Repay →</button>`:''}
+    <button class="mbtn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+window.doLOCDraw=function(){
+  const amt=parseInt(document.getElementById('locDrawAmt')?.value)||0;
+  const avail=G.loc.limit-G.loc.balance;
+  if(amt<=0||amt>avail){toast('Invalid draw amount','bad');return;}
+  G.loc.balance+=amt;G.cash+=amt;
+  ledger(`LOC Draw`,amt);
+  evFeed(`Drew ${fmt$(amt,true)} from credit line — balance ${fmt$(G.loc.balance,true)}`,'info');
+  closeModal();toast(`+${fmt$(amt,true)} drawn`,'good');renderFin();
+};
+window.doLOCRepay=function(){
+  const amt=parseInt(document.getElementById('locRepayAmt')?.value)||0;
+  if(amt<=0||G.cash<amt||amt>G.loc.balance){toast('Invalid repay amount','bad');return;}
+  G.loc.balance-=amt;G.cash-=amt;
+  ledger(`LOC Repay`,-amt);
+  evFeed(`Repaid ${fmt$(amt,true)} on credit line — balance ${fmt$(G.loc.balance,true)}`,'info');
+  closeModal();toast(`LOC balance: ${fmt$(G.loc.balance,true)}`,'info');renderFin();
+};
+
+function renderLOCSection(){
+  const el=document.getElementById('locSection');if(!el)return;
+  if(G.loc.status!=='active'){
+    el.innerHTML=`<div style="margin:0 12px 8px;padding:11px 12px;background:var(--surface);border:1px solid var(--line);border-radius:7px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:12px;font-weight:600">Business Line of Credit</div><div style="font-size:10.5px;color:var(--txt-dim);margin-top:2px">Revolving credit up to 20% of net worth · Prime+2.5%</div></div>
+      <button class="mbtn sm" onclick="openLOCModal()">Apply →</button>
+    </div>`;
+    return;
+  }
+  const avail=G.loc.limit-G.loc.balance;
+  const usedPct=Math.round((G.loc.balance/G.loc.limit)*100);
+  el.innerHTML=`<div class="loc-card">
+    <div class="loc-head">
+      <div><div class="loc-title">Credit Line · ${fmtPct(G.loc.rate)}</div>
+      <div class="loc-avail">Available: <span class="pos">${fmt$(avail,true)}</span> of ${fmt$(G.loc.limit,true)}</div></div>
+      <button class="mbtn sm" onclick="openLOCModal()">Manage →</button>
+    </div>
+    <div style="padding:0 12px 10px">
+      <div class="mkt-track" style="margin-bottom:5px"><div class="mkt-fill" style="width:${usedPct}%;background:${usedPct>80?'var(--neg)':usedPct>50?'var(--warn)':'var(--info)'}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt-dim)">
+        <span>Drawn: ${fmt$(G.loc.balance,true)}</span>
+        <span>Monthly interest: ${fmt$(Math.round(G.loc.balance*(G.loc.rate/12)),true)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── RENDERS ─────────────────────────────────────────
+function renderAll(){renderHeader();renderDash();renderMarket();renderPort();renderFin();renderTeam();renderLedger();}
+
+function renderHeader(){
+  const nw=netWorth(),cf=portCF();
+  document.getElementById('hName').textContent=G.playerName+"'s Empire";
+  document.getElementById('hSub').textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · ${G.mktType} market`;
+  document.getElementById('hBadge').textContent=G.mktType==='buyer'?'BUYER MKT':G.mktType==='seller'?'SELLER MKT':'BALANCED';
+  const ch=document.getElementById('hCash');
+  ch.textContent=fmt$(G.cash,true);ch.className='sv '+(G.cash>=0?'pos':'neg');
+  document.getElementById('hNW').textContent=fmt$(nw,true);
+  const cf_el=document.getElementById('hCF');
+  cf_el.textContent=fmtCF(cf)+'/mo';cf_el.className='sv '+(cf>=0?'pos':'neg');
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('hDate').textContent=`${M[G.month-1]} ${G.year} · Wk ${G.week}`;
+  document.getElementById('hMkt').textContent=`${G.mktType==='buyer'?'Buyer':G.mktType==='seller'?'Seller':'Balanced'} Market · Prime ${fmtPct(G.primeRate)}`;
+}
+
+function cyclePhase(){
+  if(G.mktCycle<25)return{idx:0,label:'Contraction',tip:'Prices falling — buy distressed, avoid speculative holds.'};
+  if(G.mktCycle<50)return{idx:1,label:'Recovery',tip:'Values stabilizing — ideal for BRRRR acquisitions.'};
+  if(G.mktCycle<75)return{idx:2,label:'Expansion',tip:'Rents rising, appreciation accelerating — hold and refinance.'};
+  return{idx:3,label:'Peak',tip:'Top of cycle — consider listing equity-rich properties.'};
+}
+
+function renderDash(){
+  const eq=totalEquity(),debt=totalDebt(),cf=portCF();
+  document.getElementById('d-props').textContent=G.portfolio.length;
+  document.getElementById('d-equity').textContent=fmt$(eq,true);
+  const cfel=document.getElementById('d-cf');cfel.textContent=fmtCF(cf);cfel.className='val '+(cf>=0?'pos':'neg');
+  document.getElementById('d-debt').textContent=fmt$(debt,true);
+
+  // Market cycle phase band
+  const ph=cyclePhase();
+  const phases=['Contraction','Recovery','Expansion','Peak'];
+  const phaseColors=['var(--neg)','var(--warn)','var(--pos)','var(--info)'];
+  const phaseBand=document.getElementById('dashPhaseBand');
+  if(phaseBand) phaseBand.innerHTML=phases.map((n,i)=>`<div class="phase-seg${i===ph.idx?' active':''}" style="${i===ph.idx?'background:'+phaseColors[i]+';color:#fff':''}">${n}</div>`).join('');
+
+  // 1031 exchange banner
+  const ex1031=document.getElementById('dash1031');
+  if(ex1031){
+    if(G.pending1031){
+      const wk=G.pending1031.weeksLeft;
+      ex1031.innerHTML=`<div class="b1-row"><div><div class="b1-txt">1031 Exchange Window Open</div><div class="b1-sub">Buy a replacement property to defer ${fmt$(G.pending1031.savedTax,true)} in capital gains tax. Replaces ${G.pending1031.addr||'sold property'}.</div></div><div><div class="b1-weeks">${wk}</div><div class="b1-wlbl">wks left</div></div></div>`;
+      ex1031.style.display='';
+    } else {
+      ex1031.style.display='none';
+    }
+  }
+
+  // Market conditions box
+  const bull=G.mktCycle>65,bear=G.mktCycle<35,label=bull?'Bull 🐂':bear?'Bear 🐻':'Neutral ➡';
+  document.getElementById('dashMkt').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px">
+      <span style="font-weight:600">${label} · <span style="color:var(--txt-dim);font-size:10px">${ph.label} Phase — ${ph.tip}</span></span>
+    </div>
+    ${mkMktRow('Conv 30yr',LOANS.conv.rate,0,.12,fmtPct(LOANS.conv.rate))}
+    ${mkMktRow('Hard Money',LOANS.hml.rate,.08,.18,fmtPct(LOANS.hml.rate))}
+    ${mkMktRow('Prime Rate',G.primeRate,.02,.12,fmtPct(G.primeRate))}
+    ${mkMktRow('Market Cycle',G.mktCycle/100,0,1,`${G.mktCycle.toFixed(0)}/100`)}
+    ${(G.reserve||0)>0?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--line-soft);font-size:10.5px;color:var(--txt-mid)">Repair Reserve: <span class="pos">${fmt$(G.reserve)}</span></div>`:''}`;
+
+  // Feed
+  const fd=document.getElementById('dashFeed');
+  fd.innerHTML=FEED.length?FEED.slice(0,8).map(e=>`<div class="ev ${e.cls}"><div class="d">${e.d}</div><div>${e.msg}</div></div>`).join('')
+    :`<div class="ev plain"><div class="d">—</div><div style="color:var(--txt-dim)">No activity yet. Browse Market to find your first deal.</div></div>`;
+  document.getElementById('dashFoot').textContent=`Net Worth: ${fmt$(netWorth())} · Properties: ${G.portfolio.length} · Cash: ${fmt$(G.cash)}`;
+  renderScoreWidget();
+  renderHoodStrip();
+  renderCareerStats();
+  renderAchievements();
+}
+
+function mkMktRow(lbl,v,lo,hi,disp){
+  const pct=Math.min(100,Math.max(0,((v-lo)/(hi-lo))*100));
+  const clr=lbl.includes('Conv')||lbl.includes('Hard')||lbl.includes('Prime')?'#ff5d5d':'#46d98a';
+  return`<div class="mkt-row"><div class="mkt-lbl">${lbl}</div><div class="mkt-track"><div class="mkt-fill" style="width:${pct}%;background:${clr}"></div></div><div class="mkt-val">${disp}</div></div>`;
+}
+
+function renderMarket(){
+  const el=document.getElementById('propList');
+  let props=G.market;
+  if(G.mktFilter!=='all') props=props.filter(p=>p.ptype===G.mktFilter);
+
+  // Watchlist section
+  const watched=G.market.filter(p=>G.watchlist.includes(p.id));
+  const watchHtml=watched.length?`<div class="watch-section">
+    <div class="watch-head">★ Watchlist (${watched.length})</div>
+    <div class="card" style="border:none;margin:0;border-radius:0">${watched.map(p=>{
+      const spread=p.arv-p.ask-p.rehabEst;
+      return`<div class="row" onclick="openPropModal(${p.id})" style="padding:8px 12px">
+        <div><div class="rname" style="font-size:12px">${p.addr}</div>
+        <div style="font-size:10px;color:var(--txt-dim);margin-top:2px">${fmt$(p.ask,true)} ask · ARV ${fmt$(p.arv,true)} · Spread <span class="${spread>0?'pos':'neg'}">${fmt$(spread,true)}</span></div></div>
+        <button class="mbtn sm pri" onclick="event.stopPropagation();openBuyModal(${p.id})">Offer</button>
+      </div>`;
+    }).join('')}</div>
+  </div>`:'';
+
+  renderNewsSection();
+  if(!props.length){
+    el.innerHTML=watchHtml+'<div class="subnote" style="padding:20px 12px;text-align:center;color:var(--txt-dim)">No listings match filter. Try "All" or hit Refresh.</div>';
+    return;
+  }
+  // Update toolbar button costs
+  const btnW=document.getElementById('btnWholesale');
+  if(btnW){const hasR=G.team.some(t=>t.type==='realtor');btnW.textContent=`Source Deal (${hasR?'$500':'$1,500'})`;}
+  el.innerHTML=watchHtml+`<div class="card">${props.map(p=>{
+    const cap=capRate({...p,marketVal:p.arv},p.ask);
+    const gm=grm(p.ask,p.monthlyRent);
+    const spread=p.arv-p.ask-p.rehabEst;
+    const pips=[1,2,3,4,5].map(i=>`<div class="pip${i<=p.cond?' c'+p.cond:''}"></div>`).join('');
+    const staleCls=p.offMkt?'tag-info':p.wom>7?'tag-neg':p.wom>4?'tag-warn':'tag-pos';
+    const staleLabel=p.offMkt?'OFF MKT':p.wom>7?p.wom+'wk old':p.wom>4?p.wom+'wk':'New';
+    const isWatched=G.watchlist.includes(p.id);
+    const auc=(G.auctions||[]).find(a=>a.propId===p.id&&a.status==='open');
+    const aucLabel=auc?`<span class="auc-badge">🔨 ${auc.weeksLeft}wk · ${fmt$(auc.startBid,true)}</span>`:'';
+    const whlLabel=p.isWholesale?`<span class="whl-badge">💼 WHOLESALE</span>`:'';
+    const actionBtn=auc
+      ?`<button class="mbtn sm" style="margin-top:4px;background:rgba(245,197,24,.2);color:#f5c518;border-color:#f5c518" onclick="event.stopPropagation();openBidModal(${p.id})">Bid${auc.playerBid?` ✓`:''}</button>`
+      :`<button class="mbtn sm pri" onclick="event.stopPropagation();openBuyModal(${p.id})" style="margin-top:4px">Offer</button>`;
+    return`<div class="row" onclick="${auc?`openBidModal(${p.id})`:`openPropModal(${p.id})`}">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
+          <div class="rname">${p.addr}</div>
+          <button class="star-btn${isWatched?' on':''}" onclick="event.stopPropagation();toggleWatch(${p.id})">${isWatched?'★':'☆'}</button>
+          ${aucLabel}${whlLabel}
+        </div>
+        <div class="rdetail">${p.ptype} · ${p.units>1?p.units+' units · ':''}${p.sqft.toLocaleString()} sqft · ${p.beds}bd/${p.baths}ba · ${p.yr} · <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name} ${hoodTrendArrow(p.hood)}</span></div>
+        <div class="pstat-box">
+          <div class="pstat"><div class="psl">${auc?'Start Bid':'Ask'}</div><div class="psv" style="color:${auc?'#f5c518':'var(--warn)'}">${fmt$(auc?auc.startBid:p.ask,true)}</div></div>
+          <div class="pstat"><div class="psl">ARV</div><div class="psv pos">${fmt$(p.arv,true)}</div></div>
+          <div class="pstat"><div class="psl">Rehab Est</div><div class="psv warn">${fmt$(p.rehabEst,true)}</div><div class="psd">${REHAB_WKS[p.cond]}wk</div></div>
+          <div class="pstat"><div class="psl">Spread</div><div class="psv ${spread>0?'pos':'neg'}">${fmt$(spread,true)}</div><div class="psd">ARV-all-in</div></div>
+        </div>
+        <div class="cond-row">${pips}<span style="font-size:9.5px;color:var(--txt-dim);margin-left:6px">${COND_LBL[p.cond]}</span></div>
+        <div style="margin-top:5px;font-size:10px;color:var(--txt-dim)">Cap ${fmtPct(cap)} · GRM ${gm.toFixed(1)}× · Rent ${fmt$(p.monthlyRent,true)}/mo</div>
+      </div>
+      <div class="rright">
+        <div class="rprice" style="color:${auc?'#f5c518':'var(--warn)'}">${fmt$(auc?auc.startBid:p.ask,true)}</div>
+        <span class="rtag ${staleCls}">${staleLabel}</span>
+        ${actionBtn}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderPort(){
+  const el=document.getElementById('portList');
+  const note=document.getElementById('portNote');
+  if(!G.portfolio.length){
+    note.textContent='No properties owned yet. Buy your first deal in Market.';
+    el.innerHTML='';return;
+  }
+  note.textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · Net Worth ${fmt$(netWorth())} · Monthly CF ${fmtCF(portCF())}`;
+  const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info'};
+  el.innerHTML=G.portfolio.map(p=>{
+    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?noi(p)-(l?l.payment:0):0;
+    const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
+    return`<div class="own-card">
+      <div class="own-head">
+        <div><div class="own-addr">${p.addr}</div><div class="own-sub">${p.ptype} · ${HOODS[p.hood].name} · ${p.yr} ${leaseChip(p)}</div></div>
+        <div style="display:flex;gap:4px;align-items:center">
+          ${p.tenantTier?`<span class="tier-chip tier-${p.tenantTier}">${p.tenantTier}-Tier</span>`:''}
+          <span class="badge ${scMap[p.status]||''}">${p.status.toUpperCase()}</span>
+        </div>
+      </div>
+      ${p.status==='rehab'?`<div class="prog-wrap"><div class="prog-lbl">${p.rehabWeeksLeft} weeks left in rehab</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
+      <div class="own-stats">
+        <div class="ocell"><div class="ol">Mkt Value</div><div class="ov">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
+        <div class="ocell"><div class="ol">Equity</div><div class="ov pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(l.balance,true):'No loan'}</div></div>
+        <div class="ocell"><div class="ol">Monthly CF</div><div class="ov ${cf>=0?'pos':'neg'}">${fmtCF(cf)}</div><div class="od">${p.status==='rented'?fmt$(p.monthlyRent,true)+' rent':'Not rented'}</div></div>
+      </div>
+      <div class="own-acts">
+        ${p.status==='vacant'&&p.cond<5?`<button class="mbtn sm warn" onclick="startRehab(${p.id})">Start Rehab ${fmt$(p.rehabEst,true)}</button><button class="mbtn sm" onclick="openListModal(${p.id})">List As-Is</button>`:''}
+        ${p.status==='vacant'&&p.cond===5?`<button class="mbtn sm green" onclick="openTenantTierModal(${p.id})">Rent Out</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
+        ${p.status==='rented'?`<button class="mbtn sm" onclick="openMgmtModal(${p.id})">Manage</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
+        ${p.status==='rehab'?`<span style="font-size:10.5px;color:var(--warn)">Rehab in progress…</span>`:''}
+        ${p.status==='listed'?`<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`:''}
+        <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderFin(){
+  const active=G.loans.filter(l=>l.status==='active');
+  const debt=totalDebt(),dsvc=totalDSvc();
+  const el=document.getElementById('f-debt');el.textContent=fmt$(debt,true);
+  document.getElementById('f-dsvc').textContent=fmt$(dsvc,true)+'/mo';
+  const ar=active.length?active.reduce((s,l)=>s+l.rate,0)/active.length:0;
+  document.getElementById('f-rate').textContent=active.length?fmtPct(ar):'—';
+  const ll=document.getElementById('loanList');
+  if(!active.length){ll.innerHTML='<div class="subnote" style="padding:20px;text-align:center">No active loans.</div>';}
+  else{ll.innerHTML=active.map(l=>{
+    const p=G.portfolio.find(x=>x.id===l.propId);
+    const ltv=p&&p.marketVal?l.balance/p.marketVal:0;
+    const rem=l.termMonths-(l.monthsPaid||0);
+    return`<div class="loan-card ${l.type}">
+      <div class="loan-head">
+        <div><div class="loan-name">${l.name}</div><div class="loan-prop">${p?.addr||'Unknown'}</div></div>
+        <span class="badge ${l.type==='hml'?'neg':l.type==='conv'?'pos':l.type==='dscr'?'info':'warn'}">${l.type.toUpperCase()}</span>
+      </div>
+      <div class="loan-nums">
+        <div class="lcell"><div class="ll">Balance</div><div class="lv neg">${fmt$(l.balance,true)}</div></div>
+        <div class="lcell"><div class="ll">Rate</div><div class="lv">${fmtPct(l.rate)}</div></div>
+        <div class="lcell"><div class="ll">Payment</div><div class="lv">${fmt$(l.payment,true)}/mo</div></div>
+        <div class="lcell"><div class="ll">${l.intOnly?'Mo Left':'LTV'}</div><div class="lv ${ltv>.80?'neg':ltv>.70?'warn':''}">${l.intOnly?rem+'mo':fmtPct(ltv)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  }
+  renderLOCSection();
+  renderNotesSection();
+}
+
+function renderLedger(){
+  const el=document.getElementById('ledgerWrap');
+  if(!G.ledger.length){el.innerHTML='<div class="subnote" style="padding:20px;text-align:center">No transactions yet.</div>';return;}
+  el.innerHTML=`<div class="card">${G.ledger.slice(0,60).map(e=>`
+    <div class="row" style="cursor:default">
+      <div><div class="rname" style="font-size:12px;font-weight:500">${e.desc}</div><div class="rdetail">${e.d}</div></div>
+      <div class="rright"><div class="rprice ${e.amt>=0?'pos':'neg'}" style="font-size:13px">${e.amt>=0?'+':''}${fmt$(e.amt)}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+// ── MODALS ──────────────────────────────────────────
+function openPropModal(id){
+  const p=G.market.find(x=>x.id===id)||G.portfolio.find(x=>x.id===id);
+  if(!p)return;
+  const cap=capRate({...p,marketVal:p.arv},p.ask);
+  const gm=grm(p.ask,p.monthlyRent);
+  const spread=p.arv-p.ask-p.rehabEst;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>${p.addr}</h3>
+    <div style="margin-bottom:12px"><span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name} ${p.hood}</span> <span class="badge">${p.ptype}</span> <span class="badge ${cColor(p.cond)}">${COND_LBL[p.cond]}</span></div>
+    <div class="card" style="margin:0 0 12px">
+      <div class="frow"><span class="fl">Size</span><span class="fv">${p.sqft.toLocaleString()} sqft · ${p.beds}bd/${p.baths}ba · ${p.yr}</span></div>
+      <div class="frow"><span class="fl">Condition</span><span class="fv ${cColor(p.cond)}">${COND_DSC[p.cond]}</span></div>
+      <div class="frow"><span class="fl">Asking Price</span><span class="fv warn">${fmt$(p.ask)}</span></div>
+      <div class="frow"><span class="fl">ARV (After Repair)</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+      <div class="frow"><span class="fl">Rehab Estimate</span><span class="fv warn">${fmt$(p.rehabEst)} · ${REHAB_WKS[p.cond]} wks</span></div>
+      <div class="frow"><span class="fl">All-in Cost</span><span class="fv">${fmt$(p.ask+p.rehabEst)}</span></div>
+      <div class="frow"><span class="fl">Built-in Equity (ARV − all-in)</span><span class="fv ${spread>0?'pos':'neg'}">${fmt$(spread)}</span></div>
+      <div class="frow"><span class="fl">Monthly Rent (stabilized)</span><span class="fv">${fmt$(p.monthlyRent)}/mo</span></div>
+      <div class="frow"><span class="fl">Cap Rate</span><span class="fv">${fmtPct(cap)}</span></div>
+      <div class="frow"><span class="fl">Gross Rent Multiplier</span><span class="fv">${gm.toFixed(1)}×</span></div>
+      <div class="frow tot"><span class="fl">Seller</span><span class="fv" style="color:var(--txt-mid)">${p.sellerName}</span></div>
+    </div>
+    <div class="dec">
+      <div class="dt">💡 Advisor Analysis</div>
+      <div class="db">${spread>20000?`Strong deal — ${fmt$(spread)} of built-in equity. BRRRR candidate: buy, rehab, rent, refi to pull capital back out.`:spread>5000?`Decent margin with ${fmt$(spread)} spread. Focus on cash flow — can this property sustain positive CF after debt service?`:`Thin spread. Negotiate the price down or pass. Target 20%+ below ARV + rehab costs.`}</div>
+      <div class="dbtns"><button class="mbtn green" onclick="closeModal();openBuyModal(${p.id})">Make an Offer →</button><button class="mbtn" onclick="closeModal()">Pass</button></div>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+function openBuyModal(id){
+  const p=G.market.find(x=>x.id===id);
+  if(!p){toast('Property no longer available','bad');return;}
+  let selLoan='conv', offerAmt=p.ask;
+  const render=()=>{
+    const lo=LOANS[selLoan];
+    const eff=Math.min(offerAmt,p.ask*1.1);
+    const down=Math.round(eff*lo.down/100)*100;
+    const principal=eff-down;
+    const closing=Math.round(eff*.025/100)*100; // 2.5% closing costs
+    const pts=Math.round(principal*lo.points/100)*100;
+    const totalCash=down+closing+pts;
+    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
+    const noiVal=noi({...p,marketVal:p.arv,mgmtPct:0,hoa:0,vacRate:HOODS[p.hood].vacBase});
+    const dscrVal=pmt>0?noiVal/pmt:999;
+    const canConv=G.loans.filter(l=>l.status==='active'&&l.type==='conv').length<10;
+    const canAfford=G.cash>=totalCash;
+    document.getElementById('buyContent').innerHTML=`
+      <div class="fq" style="margin-bottom:10px">
+        <div class="fqL">Your Offer</div>
+        <input class="fqI" type="number" id="offerInput" value="${offerAmt}" oninput="offerAmt=parseInt(this.value)||0;document.getElementById('buyContent').innerHTML='';renderBuy()">
+        <div class="fqS">Asking ${fmt$(p.ask)} · ARV ${fmt$(p.arv)} · Seller: ${p.sellerName}</div>
+        ${(()=>{const disc=(p.ask-offerAmt)/p.ask;if(disc<=.02)return`<div class="acc-hint acc-good">✓ At or near asking — seller very likely to accept</div>`;if(disc<=.08)return`<div class="acc-hint acc-warn">~${Math.round((1-Math.min(.8,(.22)*(disc/.10)))*100)}% accept chance — modest discount, worth trying</div>`;return`<div class="acc-hint acc-bad">⚠ ${fmtPct(disc)} below ask — seller may reject in ${G.mktType} market</div>`;})()}
+      </div>
+      <div class="sec" style="padding:8px 0 5px"><h2>Financing</h2><div class="rule"></div></div>
+      <div class="lender-list">
+        ${Object.entries(LOANS).map(([k,l])=>{
+          const dn=Math.round(eff*l.down);
+          const pr=eff-dn;
+          const pm=l.intOnly?ioPmt(pr,l.rate):mpmt(pr,l.rate,l.term);
+          const tc=dn+Math.round(eff*.025)+Math.round(pr*l.points);
+          const ok=G.cash>=tc;
+          const locked=(k==='conv'&&!canConv)||(k==='dscr'&&dscrVal<1.25&&pmt>0);
+          return`<div class="lender-row${selLoan===k?' sel':''}${locked?' dim':''}" onclick="${locked?'':'selLoanType(\''+k+'\')'}">
+            <div class="lender-main">
+              <div class="lender-name">${l.name}</div>
+              <div class="lender-sub">${l.down*100}% down · ${l.intOnly?'Int-only':'Amortizing'} · ${l.term?l.term+'mo term':'No debt'}${l.points?` · ${l.points*100}pts`:''}${locked?' · ⚠ Not available':''}</div>
+            </div>
+            <div class="lender-right">
+              <div class="lender-rate">${l.rate>0?fmtPct(l.rate):'0%'}</div>
+              <div class="lender-note">${fmt$(tc,true)} cash needed</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card" style="margin:10px 0 0">
+        <div class="frow"><span class="fl">Offer Price</span><span class="fv warn">${fmt$(offerAmt)}</span></div>
+        <div class="frow"><span class="fl">Down Payment (${lo.down*100}%)</span><span class="fv">${fmt$(down)}</span></div>
+        <div class="frow"><span class="fl">Closing Costs (~2.5%)</span><span class="fv">${fmt$(closing)}</span></div>
+        ${pts?`<div class="frow"><span class="fl">Points (${lo.points*100}%)</span><span class="fv">${fmt$(pts)}</span></div>`:''}
+        ${p.cond<5?`<div class="frow"><span class="fl">Rehab Budget</span><span class="fv warn">${fmt$(p.rehabEst)} · ${REHAB_WKS[p.cond]}wk</span></div>`:''}
+        <div class="frow tot"><span class="fl">Total All-In Cash</span><span class="fv ${G.cash>=(totalCash+(p.cond<5?p.rehabEst:0))?'pos':'neg'}">${fmt$(totalCash+(p.cond<5?p.rehabEst:0))}</span></div>
+        <div class="frow"><span class="fl">Your Cash</span><span class="fv">${fmt$(G.cash)}</span></div>
+        ${selLoan!=='cash'?`<div class="frow"><span class="fl">Loan Amount</span><span class="fv">${fmt$(principal)}</span></div>
+        <div class="frow"><span class="fl">Monthly Payment</span><span class="fv">${fmt$(pmt)}/mo</span></div>
+        <div class="frow"><span class="fl">DSCR</span><span class="fv ${dscrVal>=1.25?'pos':dscrVal>=1?'warn':'neg'}">${dscrVal===999?'∞':dscrVal.toFixed(2)} (min 1.25 for DSCR loan)</span></div>`:''}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:7px;flex-wrap:wrap">
+        <button class="mbtn green" ${canAfford?'':'disabled'} onclick="executeBuy(${p.id},'${selLoan}',${offerAmt})">Buy for ${fmt$(offerAmt,true)} →</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+      ${!canAfford?`<div class="subnote" style="padding:6px 0;color:var(--neg)">⚠ Need ${fmt$(totalCash-G.cash)} more cash for this deal.</div>`:''}`;
+  };
+  window.selLoanType=(k)=>{selLoan=k;render();};
+  window.renderBuy=render;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>${p.addr}</h3>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span>
+      <span class="badge">${p.ptype}</span>
+      <span class="badge ${cColor(p.cond)}">${COND_LBL[p.cond]}</span>
+      ${p.inspected
+        ?`<span class="insp-badge" onclick="showInspectionReport(${p.id})" style="cursor:pointer">🔍 Inspected ✓ — View Report</span>`
+        :`<button class="mbtn sm" onclick="getInspection(${p.id})" style="font-size:9.5px">🔍 Inspect ($500)</button>`}
+    </div>
+    <div id="buyContent"></div>`;
+  render();
+  document.getElementById('modalOv').classList.remove('hide');
+}
+
+function executeBuy(propId, loanType, offerPrice){
+  const p=G.market.find(x=>x.id===propId);
+  if(!p){toast('Property no longer available','bad');return;}
+  // Offer rejection — deep discounts carry risk in seller/balanced markets
+  const discountPct=(p.ask-offerPrice)/p.ask;
+  if(discountPct>0.05){
+    const baseRej=G.mktType==='seller'?.45:G.mktType==='buyer'?.08:.22;
+    const rejChance=Math.min(.80,baseRej*(discountPct/.10));
+    if(Math.random()<rejChance){
+      evFeed(`Offer rejected on ${p.addr} — seller wants closer to asking (${fmtPct(discountPct)} below ask)`,'warn');
+      toast('Offer rejected!','bad');
+      closeModal();return;
+    }
+  }
+  const lo=LOANS[loanType];
+  const down=Math.round(offerPrice*lo.down);
+  const principal=offerPrice-down;
+  const closing=Math.round(offerPrice*.025);
+  const pts=Math.round(principal*lo.points);
+  const totalCash=down+closing+pts;
+  if(G.cash<totalCash){toast('Not enough cash!','bad');return;}
+  // Execute
+  G.cash-=totalCash;
+  p.status=loanType==='cash'?'vacant':'vacant';
+  p.purchasePrice=offerPrice;
+  p.cashInvested=totalCash;
+  p.marketVal=offerPrice;
+  // Loan
+  if(loanType!=='cash'){
+    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
+    G.loans.push({
+      id:++G.lidSeq, propId:p.id, type:loanType,
+      name:`${lo.name} — ${p.addr.split(' ').slice(0,2).join(' ')}`,
+      rate:lo.rate, termMonths:lo.term, balance:principal, payment:pmt,
+      points:pts, intOnly:lo.intOnly, monthsPaid:0, status:'active'
+    });
+  }
+  // Move from market to portfolio
+  G.market=G.market.filter(x=>x.id!==propId);
+  G.portfolio.push(p);
+  if(G.yearStats) G.yearStats.acquired=(G.yearStats.acquired||0)+1;
+  G.lifetimeAcquired=(G.lifetimeAcquired||0)+1;
+  ledger(`Purchased: ${p.addr}`, -totalCash);
+  evFeed(`Bought ${p.addr} for ${fmt$(offerPrice,1)} (${loanType.toUpperCase()}) — cash out: ${fmt$(totalCash,1)}`,'good');
+  if(G.portfolio.length===1) advise('First Purchase!',`Welcome to the portfolio! Now decide your strategy: <b>Rehab & Flip</b> for a quick profit, or <b>Rehab, Rent & Hold</b> for monthly cash flow. The BRRRR strategy lets you pull your capital back out via refinance after the rehab — then repeat.`);
+  // Auto-start rehab if not turnkey and player has cash
+  if(p.cond<5){
+    if(G.cash>=p.rehabEst){
+      p.status='rehab';
+      p.rehabWeeksLeft=REHAB_WKS[p.cond];
+      p.rehabWksTotal=REHAB_WKS[p.cond];
+      p.rehabCost=p.rehabEst;
+      G.cash-=p.rehabEst;
+      ledger(`Rehab started: ${p.addr}`,-p.rehabEst);
+      evFeed(`Rehab started at ${p.addr} — ${p.rehabWeeksLeft} weeks, est. ${fmt$(p.rehabEst,1)}`,'info');
+    } else {
+      p.status='vacant';
+      evFeed(`⚠ ${p.addr} needs ${fmt$(p.rehabEst,1)} for rehab — start from Portfolio when funded.`,'warn');
+    }
+  }
+  // 1031 exchange fulfillment — replacement property must be ≥80% of sold property profit
+  if(G.pending1031&&offerPrice>=G.pending1031.profit*.8){
+    const refund=G.pending1031.savedTax;
+    G.cash+=refund;
+    ledger(`1031 Exchange — tax deferred`,refund);
+    evFeed(`1031 complete! ${fmt$(refund,true)} tax deferred on ${p.addr}`,'good');
+    advise('1031 Exchange Complete!',`You successfully deferred ${fmt$(refund,1)} in capital gains taxes by rolling the proceeds from ${G.pending1031.addr} into ${p.addr}. That's cash that stays working for you.`);
+    G.pending1031=null;
+  }
+  checkAchievements();
+  closeModal();
+  toast(`Bought ${p.addr}!`,'good');
+  go('port', document.querySelector('.nav .tab[data-tab="port"]'));
+}
+
+function openRentModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const sugRent=p.monthlyRent;
+  const noiV=noi({...p,marketVal:p.arv,mgmtPct:0});
+  const l=activeLoan(p);
+  const pmt=l?l.payment:0;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Rent Out: ${p.addr}</h3>
+    <div class="fq" style="margin-bottom:10px">
+      <div class="fqL">Monthly Rent</div>
+      <input class="fqI" type="number" id="rentInput" value="${sugRent}">
+      <div class="fqS">Market rent: ~${fmt$(sugRent)}/mo based on ${p.sqft.toLocaleString()} sqft in ${HOODS[p.hood].name}</div>
+    </div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Gross Rent</span><span class="fv">${fmt$(sugRent)}/mo</span></div>
+      <div class="frow"><span class="fl">Vacancy (${fmtPct(HOODS[p.hood].vacBase)})</span><span class="fv neg">−${fmt$(sugRent*HOODS[p.hood].vacBase,true)}/mo</span></div>
+      <div class="frow"><span class="fl">Tax+Ins+Maint (~2.8%/yr)</span><span class="fv neg">−${fmt$(p.marketVal*.028/12,true)}/mo</span></div>
+      <div class="frow"><span class="fl">Mortgage Payment</span><span class="fv neg">${pmt?'−'+fmt$(pmt,true):'None'}/mo</span></div>
+      <div class="frow tot"><span class="fl">Est. Net Cash Flow</span><span class="fv ${noiV-pmt>=0?'pos':'neg'}">${fmtCF(noiV-pmt)}/mo</span></div>
+    </div>
+    <div class="fq" style="margin-bottom:10px">
+      <div class="fqL">Lease Term</div>
+      <select class="fqI" id="leaseTerm" style="padding:6px 10px;height:auto">
+        <option value="0">Month-to-Month (highest turnover risk)</option>
+        <option value="6">6 Months</option>
+        <option value="12" selected>12 Months (standard)</option>
+        <option value="24">24 Months (most stable)</option>
+      </select>
+      <div class="fqS">Longer leases lock in rent but reduce vacancy risk</div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="mbtn green" onclick="executeRent(${id})">Place Tenant →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeRent(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const rent=parseInt(document.getElementById('rentInput').value)||p.monthlyRent;
+  const term=parseInt(document.getElementById('leaseTerm')?.value??'12');
+  p.monthlyRent=rent;p.status='rented';p.tenant=`${pick(FNAMES)} ${pick(LNAMES)}`;
+  p.leaseTermMonths=term;
+  p.isMonthToMonth=term===0;
+  p.leaseExpiry=term>0?calcLeaseExpiry(term):null;
+  // Screener team member auto-applies A-tier
+  if(G.team.some(t=>t.type==='screener')&&!p.tenantTier){
+    p.tenantTier='A';p.vacRate=HOODS[p.hood].vacBase*.5;p.latePayProb=.02;
+  }
+  evFeed(`${p.addr} rented at ${fmt$(rent,1)}/mo · ${term?term+'mo lease':'MTM'}`,'good');
+  checkAchievements();
+  closeModal();toast('Tenant placed!','good');renderAll();
+}
+
+function openListModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>List for Sale: ${p.addr}</h3>
+    <div class="fq" style="margin-bottom:10px">
+      <div class="fqL">List Price</div>
+      <input class="fqI" type="number" id="listInput" value="${p.marketVal}">
+      <div class="fqS">Market value: ~${fmt$(p.marketVal)} · ARV: ${fmt$(p.arv)}</div>
+    </div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Purchase Price</span><span class="fv">${fmt$(p.purchasePrice)}</span></div>
+      <div class="frow"><span class="fl">Rehab Cost</span><span class="fv">${fmt$(p.rehabCost)}</span></div>
+      <div class="frow"><span class="fl">Selling Costs (~6%)</span><span class="fv neg">−${fmt$(p.marketVal*.06,true)}</span></div>
+      <div class="frow tot"><span class="fl">Est. Net Profit</span><span class="fv pos">${fmt$(p.marketVal-p.purchasePrice-p.rehabCost-p.marketVal*.06)}</span></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer">
+        <input type="checkbox" id="sfCheck" style="width:15px;height:15px;margin-top:2px;flex-shrink:0">
+        <div>
+          <div style="font-size:11px;font-weight:700">Offer Seller Financing (7% / 30yr)</div>
+          <div style="font-size:9.5px;color:var(--txt-dim);margin-top:2px">Buyer puts 20% down; you carry the note and collect monthly P&I payments. Great for passive income — but you wait decades for full principal return.</div>
+        </div>
+      </label>
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="mbtn green" onclick="executeList(${id})">List Property →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeList(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  p.listPrice=parseInt(document.getElementById('listInput').value)||p.marketVal;
+  p.sellerFinance=document.getElementById('sfCheck')?.checked||false;
+  p.status='listed';p.listWeeks=0;
+  evFeed(`${p.addr} listed for sale at ${fmt$(p.listPrice,1)}${p.sellerFinance?' (SF available)':''}`,'info');
+  closeModal();toast('Listed!','good');renderAll();
+}
+
+function delistProp(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  p.status=p.tenant?'rented':'vacant';p.listPrice=0;p.listWeeks=0;p.sellerFinance=false;
+  toast('Delisted','warn');renderAll();
+}
+
+function openRefiModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const maxRefi=Math.round(p.marketVal*.75);
+  const existLoan=activeLoan(p);
+  const payoff=existLoan?existLoan.balance:0;
+  const cashOut=maxRefi-payoff;
+  const newPmt=mpmt(maxRefi,LOANS.conv.rate,360);
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Cash-Out Refinance: ${p.addr}</h3>
+    <div class="dec"><div class="dt">💡 BRRRR Strategy</div><div class="db">Refinance at 75% LTV to pull cash out and recycle it into the next deal. The property still generates cash flow after the new mortgage.</div></div>
+    <div class="card" style="margin:10px 0">
+      <div class="frow"><span class="fl">Market Value</span><span class="fv">${fmt$(p.marketVal)}</span></div>
+      <div class="frow"><span class="fl">New Loan (75% LTV)</span><span class="fv">${fmt$(maxRefi)}</span></div>
+      <div class="frow"><span class="fl">Pay Off Existing</span><span class="fv neg">${fmt$(payoff)}</span></div>
+      <div class="frow tot"><span class="fl">Cash Out</span><span class="fv ${cashOut>0?'pos':'neg'}">${fmt$(cashOut)}</span></div>
+      <div class="frow"><span class="fl">New Monthly Payment</span><span class="fv">${fmt$(newPmt)}/mo at ${fmtPct(LOANS.conv.rate)}</span></div>
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="mbtn ${cashOut>0?'green':'danger'}" onclick="executeRefi(${id})">Execute Refi →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeRefi(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const maxRefi=Math.round(p.marketVal*.75);
+  const existing=activeLoan(p);
+  if(existing){existing.status='paid';G.cash+=existing.balance;}
+  G.cash+=maxRefi;
+  const pmt=mpmt(maxRefi,LOANS.conv.rate,360);
+  G.loans.push({
+    id:++G.lidSeq,propId:p.id,type:'conv',
+    name:`Conventional Refi — ${p.addr.split(' ').slice(0,2).join(' ')}`,
+    rate:LOANS.conv.rate,termMonths:360,balance:maxRefi,payment:pmt,
+    points:0,intOnly:false,monthsPaid:0,status:'active'
+  });
+  const cashOut=maxRefi-(existing?existing.balance:0);
+  G.lifetimeRefi=(G.lifetimeRefi||0)+1;
+  ledger(`Cash-out refi: ${p.addr}`,cashOut);
+  evFeed(`Refinanced ${p.addr} — pulled out ${fmt$(cashOut,1)} cash.`,'good');
+  checkAchievements();
+  closeModal();toast(`Refi complete! +${fmt$(cashOut,true)} cash`,'good');renderAll();
+}
+
+function openMgmtModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Manage: ${p.addr}</h3>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Tenant</span><span class="fv">${p.tenant||'None'}${p.tenantTier?` <span class="tier-chip tier-${p.tenantTier}">${p.tenantTier}-Tier</span>`:''}</span></div>
+      <div class="frow"><span class="fl">Monthly Rent</span><span class="fv pos">${fmt$(p.monthlyRent)}/mo</span></div>
+      <div class="frow"><span class="fl">Property Mgmt Fee</span><span class="fv">${p.mgmtPct>0?fmtPct(p.mgmtPct)+' of rent':'None (self-managed)'}</span></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="mbtn" onclick="togglePM(${id})">Toggle PM (8%)</button>
+      <button class="mbtn danger" onclick="evictTenant(${id})">Evict Tenant</button>
+      <button class="mbtn" onclick="closeModal()">Close</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function togglePM(id){const p=G.portfolio.find(x=>x.id===id);if(!p)return;p.mgmtPct=p.mgmtPct>.0?0:.08;toast(p.mgmtPct>0?'PM hired (8%)':'PM removed','info');closeModal();renderAll();}
+function evictTenant(id){const p=G.portfolio.find(x=>x.id===id);if(!p)return;p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;evFeed(`Tenant evicted from ${p.addr}`,'warn');closeModal();toast('Tenant removed','warn');renderAll();}
+
+function openHireModal(){
+  setTeamTab('team',document.querySelector('#teamSubtab [data-ts="team"]'));
+  go('team',document.querySelector('.nav .tab[data-tab="team"]'));
+}
+
+// ── TEAM SUBTAB ─────────────────────────────────────
+let G_teamTab='team';
+function setTeamTab(t,el){
+  if(!el)return;
+  document.querySelectorAll('#teamSubtab .segchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  G_teamTab=t;
+  const act=document.getElementById('teamAct');
+  if(act) act.style.display=t==='team'?'':'none';
+  if(t==='auto') renderAutomation(); else renderTeamRoster();
+}
+
+function renderAutomation(){
+  const el=document.getElementById('teamList');if(!el)return;
+  const html=[];
+  html.push(`<div class="subnote">Rules run automatically each month. <span class="pos">Reserve: ${fmt$(G.reserve||0)}</span>${G.pending1031?` · <span class="info">1031 window: ${G.pending1031.weeksLeft} wks</span>`:''}</div>`);
+  Object.entries(RULE_TYPES).forEach(([k,def])=>{
+    const rule=G.rules.find(r=>r.type===k);
+    const active=rule?.active||false;
+    const paramRows=def.params.length&&active?`<div class="rule-params">${def.params.map(pm=>{
+      const val=rule?.params?.[pm.id]??pm.def;
+      return`<div class="rparam"><span style="color:var(--txt-mid)">${pm.label}:</span>
+        <input type="number" value="${val}" min="0" onchange="setRuleParam('${k}','${pm.id}',+this.value)">
+      </div>`;
+    }).join('')}</div>`:'';
+    html.push(`<div class="rule-card">
+      <div class="rule-head">
+        <span style="font-size:20px;line-height:1">${def.icon}</span>
+        <div class="rule-info"><div class="rule-name">${def.label}</div><div class="rule-desc">${def.desc}</div></div>
+        <button class="toggle${active?' on':''}" onclick="toggleRule('${k}')"></button>
+      </div>${paramRows}
+    </div>`);
+  });
+  el.innerHTML=html.join('');
+}
+
+function toggleRule(type){
+  if(!G.rules) G.rules=[];
+  let rule=G.rules.find(r=>r.type===type);
+  if(!rule){
+    const def=RULE_TYPES[type];
+    const params={};
+    (def.params||[]).forEach(p=>params[p.id]=p.def);
+    rule={type,params,active:true};
+    G.rules.push(rule);
+  } else {
+    rule.active=!rule.active;
+  }
+  renderAutomation();
+  toast(rule.active?`${RULE_TYPES[type].label} enabled`:`Rule disabled`,'info');
+}
+function setRuleParam(type,paramId,value){
+  const rule=G.rules.find(r=>r.type===type);
+  if(rule) rule.params[paramId]=value;
+}
+
+// ── PER-PROPERTY P&L MODAL ───────────────────────────
+function openPropAnalytics(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const l=activeLoan(p);
+  const gross=p.monthlyRent||0;
+  const vacPct=p.vacRate||HOODS[p.hood].vacBase;
+  const vacancy=gross*vacPct;
+  const egi=gross-vacancy;
+  const mgmt=gross*(p.mgmtPct||0);
+  const tax=p.marketVal*.011/12;
+  const ins=(p.sqft||1000)*.042;
+  const maint=(p.sqft||1000)*.083;
+  const hoa=p.hoa||0;
+  const noiVal=egi-mgmt-tax-ins-maint-hoa;
+  const debtSvc=l?l.payment:0;
+  const ncf=noiVal-debtSvc;
+  const coc=p.cashInvested>0?(ncf*12)/p.cashInvested:0;
+  const capR=p.marketVal>0?(noiVal*12)/p.marketVal:0;
+  const eq=equity(p);
+  const ltv=l&&p.marketVal?l.balance/p.marketVal:0;
+  const unrealizedGain=p.marketVal-p.purchasePrice-(p.rehabCost||0);
+  const totalReturn=p.cashInvested>0?((ncf*12)+(p.marketVal*HOODS[p.hood].appreci))/p.cashInvested:0;
+
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>P&L: ${p.addr}</h3>
+    <div style="margin-bottom:10px">
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span>
+      <span class="badge">${p.ptype}</span>
+      <span class="badge ${ncf>=0?'pos':'neg'}">${p.status.toUpperCase()}</span>
+    </div>
+    <div class="sec" style="padding:0 0 5px"><h2>Monthly Income Statement</h2><div class="rule"></div></div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Gross Rent (${p.units} unit${p.units>1?'s':''})</span><span class="fv pos">+${fmt$(gross)}</span></div>
+      <div class="frow"><span class="fl">Vacancy (${fmtPct(vacPct)})</span><span class="fv neg">−${fmt$(vacancy,true)}</span></div>
+      <div class="frow tot"><span class="fl">Effective Gross Income</span><span class="fv">${fmt$(egi)}</span></div>
+      ${mgmt?`<div class="frow"><span class="fl">Property Mgmt (${fmtPct(p.mgmtPct)})</span><span class="fv neg">−${fmt$(mgmt,true)}</span></div>`:''}
+      <div class="frow"><span class="fl">Property Tax (1.1%/yr)</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
+      <div class="frow"><span class="fl">Insurance</span><span class="fv neg">−${fmt$(ins,true)}</span></div>
+      <div class="frow"><span class="fl">Maintenance</span><span class="fv neg">−${fmt$(maint,true)}</span></div>
+      ${hoa?`<div class="frow"><span class="fl">HOA</span><span class="fv neg">−${fmt$(hoa,true)}</span></div>`:''}
+      <div class="frow tot"><span class="fl">Net Operating Income</span><span class="fv ${noiVal>=0?'pos':'neg'}">${fmt$(noiVal)}/mo</span></div>
+      ${debtSvc?`<div class="frow"><span class="fl">Debt Service</span><span class="fv neg">−${fmt$(debtSvc,true)}/mo</span></div>`:''}
+      <div class="frow tot" style="${ncf>=0?'background:rgba(70,217,138,.06)':'background:rgba(255,93,93,.06)'}">
+        <span class="fl" style="font-weight:700">Net Cash Flow</span>
+        <span class="fv ${ncf>=0?'pos':'neg'}" style="font-size:16px">${fmtCF(ncf)}/mo</span>
+      </div>
+    </div>
+    <div class="sec" style="padding:0 0 5px"><h2>Investment Metrics</h2><div class="rule"></div></div>
+    <div class="strip" style="margin:0 0 10px">
+      <div class="cell"><div class="lbl">Cash-on-Cash</div><div class="val ${coc>=.08?'pos':coc>=.04?'warn':'neg'}">${fmtPct(coc)}</div><div class="dl">annual</div></div>
+      <div class="cell"><div class="lbl">Cap Rate</div><div class="val">${fmtPct(capR)}</div><div class="dl">on mkt val</div></div>
+      <div class="cell"><div class="lbl">LTV</div><div class="val ${ltv>.80?'neg':ltv>.70?'warn':'pos'}">${ltv>0?fmtPct(ltv):'None'}</div><div class="dl">equity ${fmt$(eq,true)}</div></div>
+    </div>
+    <div class="card" style="margin:0 0 12px">
+      <div class="frow"><span class="fl">Purchase Price</span><span class="fv">${fmt$(p.purchasePrice)}</span></div>
+      <div class="frow"><span class="fl">Rehab Cost</span><span class="fv">${fmt$(p.rehabCost||0)}</span></div>
+      <div class="frow"><span class="fl">Cash Invested (down+closing+rehab)</span><span class="fv">${fmt$(p.cashInvested)}</span></div>
+      <div class="frow"><span class="fl">Current Market Value</span><span class="fv">${fmt$(p.marketVal)}</span></div>
+      <div class="frow"><span class="fl">Unrealized Gain</span><span class="fv ${unrealizedGain>=0?'pos':'neg'}">${fmt$(unrealizedGain)}</span></div>
+      <div class="frow tot"><span class="fl">Est. Annual Total Return</span><span class="fv ${totalReturn>=.12?'pos':totalReturn>=.06?'warn':'neg'}">${fmtPct(totalReturn)} <span style="font-size:10px;font-weight:400;color:var(--txt-dim)">(CF + appreciation)</span></span></div>
+    </div>
+    <button class="mbtn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function startRehab(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  if(G.cash<p.rehabEst){toast(`Need ${fmt$(p.rehabEst-G.cash,true)} more for rehab`,'bad');return;}
+  G.cash-=p.rehabEst;
+  p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=p.rehabEst;
+  ledger(`Rehab started: ${p.addr}`,-p.rehabEst);
+  evFeed(`Rehab started at ${p.addr} — ${p.rehabWeeksLeft} wks, ${fmt$(p.rehabEst,1)}`,'info');
+  toast('Rehab started!','info');renderAll();
+}
+
+
+function closeModal(){document.getElementById('modalOv').classList.add('hide');}
+
+// ── NAVIGATION ──────────────────────────────────────
+function go(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav .tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  if(el) el.classList.add('on');
+  G.activeTab=id;renderAll();
+}
+function setMktF(f,el){
+  document.querySelectorAll('#mktFilter .segchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');G.mktFilter=f;renderMarket();
+}
+function doRefreshMarket(){
+  if(G.market.length>3)G.market.splice(0,3);
+  genMarket(3);renderMarket();toast('New listings added','info');
+}
+function selCard(el,groupId){
+  document.querySelectorAll('#'+groupId+' .type-card, #'+groupId+' .scale-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('thD').classList.toggle('on',t==='dark');
+  document.getElementById('thL').classList.toggle('on',t==='light');
+}
+function setSpeed(n){
+  ['spd0','spd1','spd2'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el)el.className='mbtn sm'+(i===n?' pri':'');
+  });
+  G.autoSpeed=n;clearInterval(G.autoTimer);
+  if(n>0)G.autoTimer=setInterval(tick,n===1?2000:800);
+}
+
+// ── START / LOAD ────────────────────────────────────
+function startGame(){
+  const mkt=document.querySelector('#mktCards .type-card.sel')?.dataset.mkt||'balanced';
+  const cap=parseInt(document.querySelector('#capCards .scale-card.sel')?.dataset.cap||'75000');
+  const name=(document.getElementById('playerName').value.trim()||'Investor');
+  initState(mkt,cap,name);
+  G_milestoneIdx=0;
+  // Seed 2-3 news items so Market Intel isn't empty on day 1
+  for(let i=0;i<3;i++) generateNews();
+  launchApp();
+  setTimeout(()=>advise('Welcome to Real Estate Empire',`You're starting with <b>${fmt$(cap)}</b> in a <b>${mkt} market</b>. Head to <b>Market</b> to browse deals. Look for properties priced well below ARV — that spread is built-in equity on day one. Good luck, ${name}!`),500);
+}
+function continueGame(){
+  if(!loadGame()){toast('No save found','bad');return;}
+  launchApp();
+  toast(`Welcome back, ${G.playerName}!`,'good');
+}
+function launchApp(){
+  document.getElementById('startOv').classList.add('hide');
+  document.getElementById('app').style.display='';
+  renderAll();
+}
+// Check for save on page load
+window.addEventListener('DOMContentLoaded',()=>{
+  if(hasSave()) document.getElementById('loadBtn').style.display='';
+});
+
+// ── TOAST ───────────────────────────────────────────
+function toast(msg,cls=''){
+  const t=document.createElement('div');
+  t.className='toast'+(cls?' '+cls:'');t.textContent=msg;
+  document.getElementById('toasts').appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},2600);
+}
+</script>
+</body>
+</html>

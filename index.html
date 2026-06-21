@@ -919,6 +919,11 @@ function tick(){
         advise('BRRRR Opportunity',`${p.addr} rehab done at ARV ${fmt$(p.arv,1)}. Cash-out refi at 75% LTV returns ~${fmt$(Math.round(p.arv*.75/1000)*1000,1)} — recycle that into your next deal.`);
       }
     }
+    // Value-add (CapEx) progress — runs in parallel; property keeps its status
+    if(p.vaWeeksLeft>0){
+      p.vaWeeksLeft=Math.max(0,p.vaWeeksLeft-(rehabSpeed>1?rehabSpeed-1:0)-1);
+      if(p.vaWeeksLeft<=0) completeValueAdd(p);
+    }
     // Weekly market value drift (small random walk)
     if(p.status!=='market'&&p.marketVal>0){
       p.marketVal=Math.round(p.marketVal*(1+(Math.random()-.48)*.002)/100)*100;
@@ -2627,6 +2632,7 @@ function renderPort(){
         </div>
       </div>
       ${p.status==='rehab'?`<div class="prog-wrap"><div class="prog-lbl">${p.rehabWeeksLeft} weeks left in rehab</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
+      ${p.vaWeeksLeft>0?`<div class="prog-wrap"><div class="prog-lbl" style="color:var(--info)">${VALUE_ADD[p.vaProject]?.icon||''} ${VALUE_ADD[p.vaProject]?.label||'Value-add'} — ${p.vaWeeksLeft}wk left</div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round((1-p.vaWeeksLeft/(p.vaWksTotal||1))*100)}%;background:var(--info)"></div></div></div>`:''}
       <div class="own-stats">
         <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
         <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?(l.blanket?'Blanket ':'Debt ')+fmt$(propDebt(p),true):'No loan'}</div></div>
@@ -2634,8 +2640,8 @@ function renderPort(){
       </div>
       <div class="own-acts">
         ${p.status==='vacant'&&p.cond<5?`<button class="mbtn sm warn" onclick="startRehab(${p.id})">Start Rehab ${fmt$(p.rehabEst,true)}</button><button class="mbtn sm" onclick="openListModal(${p.id})">List As-Is</button>`:''}
-        ${p.status==='vacant'&&p.cond===5?`<button class="mbtn sm green" onclick="openTenantTierModal(${p.id})">Rent Out</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
-        ${p.status==='rented'?`<button class="mbtn sm" onclick="openMgmtModal(${p.id})">Manage</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
+        ${p.status==='vacant'&&p.cond===5?`<button class="mbtn sm green" onclick="openTenantTierModal(${p.id})">Rent Out</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>${p.vaWeeksLeft>0?'':`<button class="mbtn sm" onclick="openValueAddModal(${p.id})">Value-Add</button>`}`:''}
+        ${p.status==='rented'?`<button class="mbtn sm" onclick="openMgmtModal(${p.id})">Manage</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>${p.vaWeeksLeft>0?'':`<button class="mbtn sm" onclick="openValueAddModal(${p.id})">Value-Add</button>`}`:''}
         ${p.status==='rehab'?`<span style="font-size:10.5px;color:var(--warn)">Rehab in progress…</span>`:''}
         ${p.status==='listed'?`<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`:''}
         <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
@@ -3255,6 +3261,67 @@ function startRehab(id){
   ledger(`Rehab started: ${p.addr}`,-p.rehabEst);
   evFeed(`Rehab started at ${p.addr} — ${p.rehabWeeksLeft} wks, ${fmt$(p.rehabEst,1)}`,'info');
   toast('Rehab started!','info');renderAll();
+}
+
+// ── VALUE-ADD (CapEx) ──────────────────────────────
+// Projects that cost cash + weeks and raise rent AND ARV (forced equity).
+// Run in parallel with the property's status; Contractors speed them up.
+const VALUE_ADD={
+  kitchen: {label:'Kitchen / Cosmetic Force',icon:'🍳',weeks:3,arvMult:1.4,rentPct:.07,addSqft:0,  addUnit:0,
+    cost:p=>Math.round((p.sqft*10+9000)/500)*500, desc:'Premium kitchen + cosmetic refresh that forces higher rent and value fast.'},
+  bedbath: {label:'Add Bed / Bath',icon:'🛁',weeks:5,arvMult:1.5,rentPct:.10,addSqft:120,addUnit:0,
+    cost:p=>Math.round((p.sqft*8+16000)/500)*500, desc:'Reconfigure to add a bedroom or bath — strong rent and ARV lift.'},
+  basement:{label:'Finish Basement / Attic',icon:'🏗️',weeks:7,arvMult:1.4,rentPct:.13,addSqft:400,addUnit:0,
+    cost:p=>Math.round((p.sqft*18+14000)/500)*500, desc:'Convert unfinished space into livable square footage.'},
+  adu:     {label:'Build ADU (extra unit)',icon:'🏘️',weeks:12,arvMult:1.6,rentPct:0,addSqft:500,addUnit:1,
+    cost:p=>Math.round((65000+p.sqft*6)/1000)*1000, desc:'Add an accessory dwelling unit — a whole new income stream.'},
+};
+function vaCostOf(p,key){return VALUE_ADD[key].cost(p);}
+function openValueAddModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  if(p.status==='rehab'||p.vaWeeksLeft>0){toast('A project is already running here','warn');return;}
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Value-Add: ${p.addr}</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Capital improvements raise both rent and ARV (forced equity). Cost + timeline below; Contractors speed up the work. Cash is paid up front.</div></div>
+    ${Object.entries(VALUE_ADD).map(([k,d])=>{
+      const cost=vaCostOf(p,k);
+      const arvAdd=Math.round(cost*d.arvMult);
+      const rentAdd=k==='adu'?Math.round(p.monthlyRent/Math.max(1,p.units)):Math.round(p.monthlyRent*d.rentPct/25)*25;
+      const afford=G.cash>=cost;
+      return`<div class="type-card" style="margin:0 0 8px">
+        <div class="tt"><span>${d.icon}</span>${d.label}</div>
+        <div class="td">${d.desc}</div>
+        <div class="tm"><span>Cost ${fmt$(cost,true)}</span><span>${d.weeks}wk</span><span class="pos">+${fmt$(rentAdd,true)}/mo</span><span class="pos">+${fmt$(arvAdd,true)} value</span>${d.addUnit?'<span class="info">+1 unit</span>':''}</div>
+        <button class="mbtn sm green" style="margin-top:8px" ${afford?'':'disabled'} onclick="startValueAdd(${id},'${k}')">${afford?'Start →':'Need '+fmt$(cost-G.cash,true)}</button>
+      </div>`;
+    }).join('')}
+    <button class="mbtn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function startValueAdd(id,key){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const d=VALUE_ADD[key];if(!d)return;
+  const cost=vaCostOf(p,key);
+  if(G.cash<cost){toast('Not enough cash','bad');return;}
+  G.cash-=cost;
+  p.vaProject=key;p.vaCost=cost;p.vaWeeksLeft=d.weeks;p.vaWksTotal=d.weeks;
+  ledger(`Value-add (${d.label}): ${p.addr}`,-cost);
+  evFeed(`Value-add started at ${p.addr} — ${d.label}, ${d.weeks}wk, ${fmt$(cost,1)}`,'info');
+  toast('Value-add started!','info');closeModal();renderAll();
+}
+function completeValueAdd(p){
+  const d=VALUE_ADD[p.vaProject];if(!d){p.vaWeeksLeft=0;return;}
+  const arvAdd=Math.round((p.vaCost||0)*d.arvMult);
+  const rentAdd=p.vaProject==='adu'?Math.round(p.monthlyRent/Math.max(1,p.units)):Math.round(p.monthlyRent*d.rentPct/25)*25;
+  p.arv+=arvAdd; p.marketVal+=arvAdd;
+  p.monthlyRent+=rentAdd;
+  p.sqft+=d.addSqft; p.units+=d.addUnit;
+  if(p.vaProject==='bedbath') p.beds=(p.beds||2)+1;
+  G.lifetimeRehab=(G.lifetimeRehab||0)+1;
+  evFeed(`✅ Value-add complete at ${p.addr} — ${d.label}: +${fmt$(rentAdd,true)}/mo rent, +${fmt$(arvAdd,true)} value`,'good');
+  p.vaProject=null;p.vaCost=0;p.vaWksTotal=0;
+  checkAchievements();renderAll();
 }
 
 

@@ -214,6 +214,22 @@ header{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:
 .modal h3{font-weight:600;font-size:15px;margin-bottom:4px}
 .modal .x{float:right;cursor:pointer;color:var(--txt-dim);font-size:18px;line-height:1}
 
+/* ── DEALS DRAWER (slide-up) ──────────────────── */
+.drawer-ov{position:fixed;inset:0;z-index:160;background:var(--ov);display:flex;align-items:flex-end;justify-content:center}
+.drawer-ov.hide{display:none}
+.drawer{background:var(--surface);border:1px solid var(--line);border-radius:2px 2px 0 0;width:100%;max-width:600px;max-height:82dvh;overflow-y:auto;padding-bottom:calc(12px + env(safe-area-inset-bottom));animation:slideUp .22s ease-out}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.drawer-grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 4px}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 6px;border-bottom:1px solid var(--line-soft);position:sticky;top:0;background:var(--surface);z-index:1}
+.drawer-head h3{font-weight:600;font-size:15px}
+.drawer-head .x{cursor:pointer;color:var(--txt-dim);font-size:20px;line-height:1;padding:0 4px}
+.lead-card{margin:8px 12px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--info);border-radius:2px;overflow:hidden}
+.lead-card.reo{border-left-color:var(--warn)}.lead-card.preforeclosure{border-left-color:var(--neg)}
+.lead-head{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 12px 4px;gap:8px}
+.lead-acts{display:flex;gap:6px;padding:4px 12px 10px;flex-wrap:wrap}
+.tab-deals{position:relative}
+.deals-count{position:absolute;top:2px;right:8px;min-width:15px;height:15px;line-height:15px;font-size:9px;font-weight:700;color:#fff;background:var(--neg);border-radius:8px;padding:0 4px;font-family:var(--mono)}
+
 /* ── DECISION BOX ────────────────────────────── */
 .dec{background:var(--surface);border:1px solid var(--warn);border-radius:8px;padding:11px 12px;margin:8px 0}
 .dec .dt{font-weight:600;font-size:13px;color:var(--warn);margin-bottom:5px}
@@ -597,6 +613,7 @@ body{font-size:13.5px}
 <nav class="nav">
   <div class="tab on" data-tab="dash" onclick="go('dash',this)"><span class="ic">▦</span>Dashboard</div>
   <div class="tab" data-tab="market" onclick="go('market',this)"><span class="ic">🏘</span>Market</div>
+  <div class="tab tab-deals" id="navDeals" onclick="openDealsDrawer()"><span class="ic">🎯</span>Deals<span class="deals-count" id="dealsCount" style="display:none">0</span></div>
   <div class="tab" data-tab="port" onclick="go('port',this)"><span class="ic">🏠</span>Portfolio</div>
   <div class="tab" data-tab="fin" onclick="go('fin',this)"><span class="ic">💰</span>Finance</div>
   <div class="tab" data-tab="team" onclick="go('team',this)"><span class="ic">👷</span>Team</div>
@@ -607,6 +624,23 @@ body{font-size:13.5px}
 <!-- MODAL -->
 <div class="modal-ov hide" id="modalOv">
   <div class="modal" id="modalBox"></div>
+</div>
+
+<!-- DEALS DRAWER -->
+<div class="drawer-ov hide" id="dealsOv" onclick="if(event.target===this)closeDealsDrawer()">
+  <div class="drawer" id="dealsDrawer">
+    <div class="drawer-grab"></div>
+    <div class="drawer-head">
+      <h3>🎯 Acquisitions</h3>
+      <span class="x" onclick="closeDealsDrawer()">×</span>
+    </div>
+    <div class="srcfilter" id="dealsSubtab" style="padding:2px 12px 6px">
+      <span class="segchip on" data-ds="pipeline" onclick="setDealsTab('pipeline',this)">Pipeline</span>
+      <span class="segchip" data-ds="creative" onclick="setDealsTab('creative',this)">Creative</span>
+      <span class="segchip" data-ds="partners" onclick="setDealsTab('partners',this)">Partners</span>
+    </div>
+    <div id="dealsBody"></div>
+  </div>
 </div>
 
 <!-- ADVISOR -->
@@ -656,6 +690,12 @@ const TEAM_TYPES = {
     stat:'Tax savings',effect:'−12% income tax drag'},
   screener:{role:'Tenant Screener',icon:'⭐',desc:'Runs background checks and auto-selects A-tier tenants on every placement. Also halves late payment risk portfolio-wide.',weeklyCost:250,maxHire:1,
     stat:'Tenant quality',effect:'Auto A-tier · −50% late pay risk'},
+  acquisitions:{role:'Acquisitions Mgr',icon:'🎯',desc:'Runs driving-for-dollars and a pre-foreclosure/REO pipeline. Feeds off-market deals into your Deals drawer every week — many below market and some assumable (subject-to).',weeklyCost:600,maxHire:2,
+    stat:'Deal sourcing',effect:'Off-market + REO leads/wk'},
+  broker:{role:'Mortgage Broker',icon:'🏦',desc:'Shops every lender for the best rate (a discount that grows as your relationship deepens), powers auto rate-shop refinancing, and unlocks blanket loans + a portfolio credit facility.',weeklyCost:300,maxHire:1,
+    stat:'Financing',effect:'Better rates · blanket loans'},
+  regional:{role:'Regional Manager',icon:'🗺️',desc:'Assign to a neighborhood and they run it end-to-end — auto-rent, re-leasing, maintenance and rehab for every property there. You manage managers, not units.',weeklyCost:800,maxHire:4,
+    stat:'Operations',effect:'Auto-runs an assigned hood'},
 };
 
 // Market event templates
@@ -695,6 +735,21 @@ const RULE_TYPES = {
     icon:'🏷',label:'Auto-List on Equity Target',
     desc:'List a rented property for sale automatically when its equity hits your target.',
     params:[{id:'equityTarget',label:'Equity target ($)',def:75000}],
+  },
+  auto_value_add:{
+    icon:'🏗️',label:'Auto Value-Add',
+    desc:'Start the best value-add project on a rented/turnkey property when cash stays above your floor and the projected value gain clears the cost by your ROI multiple.',
+    params:[{id:'floor',label:'Keep reserve ($)',def:40000},{id:'roi',label:'Min value/cost ×',def:1.3}],
+  },
+  auto_rate_refi:{
+    icon:'📉',label:'Auto Rate-Shop Refi',
+    desc:'With a Mortgage Broker on staff, refinance any amortizing loan into a new 30-yr when market rates drop more than your trigger below the loan\'s rate.',
+    params:[{id:'drop',label:'Rate drop trigger (%)',def:1.0}],
+  },
+  auto_tax_appeal:{
+    icon:'⚖️',label:'Auto Tax Appeal',
+    desc:'Automatically file a property-tax assessment appeal each year on properties that have not yet been reduced.',
+    params:[],
   },
 };
 
@@ -761,6 +816,13 @@ function initState(mktType, startCash, playerName){
     careerCF:0,
     bestDealProfit:0,
     highestNW:0,
+    // ── Acquisitions / creative deals / delegation release ──
+    leads:[],            // sourced off-market + REO pipeline (Acquisitions Mgr)
+    partners:[],         // money-partner roster (operator: fee + promote)
+    blanketLoans:[],     // multi-property blanket loans (Mortgage Broker)
+    brokerRel:0,         // lender relationship level → better rates over time
+    regions:{},          // hood -> assigned Regional Manager teamId
+    lidSeqDeal:0,        // id sequence for leads
   };
   updateRates();
   genMarket(8);
@@ -780,22 +842,39 @@ function mpmt(P,annR,n){ // monthly amortizing payment
 function ioPmt(P,annR){return P*(annR/12);}
 function noi(p){ // monthly NOI
   const r=p.monthlyRent||0,v=r*(p.vacRate||HOODS[p.hood].vacBase);
-  const tax=p.marketVal*.011/12*(G.taxMod||1);   // 1.1% property tax/yr × market event modifier
+  const tax=p.marketVal*.011/12*(G.taxMod||1)*(p.taxAppeal||1);   // 1.1% property tax/yr × market event modifier × appeal reduction
   const ins=(p.sqft||1000)*.042*(G.insuranceMod||1); // ~$0.50/sqft/yr × insurance event modifier
   const maint=(p.sqft||1000)*.083;               // ~$1/sqft/yr maintenance
   return r-v-(r*(p.mgmtPct||0))-tax-ins-maint-(p.hoa||0);
 }
 function capRate(p,price){return price>0?(noi(p)*12)/price:0;}
 function grm(price,mRent){return mRent>0?price/(mRent*12):0;}
-function equity(p){const l=activeLoan(p);return p.marketVal-(l?l.balance:0);}
-function activeLoan(p){return G.loans.find(l=>l.propId===p.id&&l.status==='active');}
+// Operator's ownership fraction. Money-partner deals: the partner owns
+// p.partner.equityPct, so you (the operator) keep the rest of equity and
+// cash flow — your "promote" comes from controlling the deal with little
+// or none of your own capital.
+function myShare(p){return p&&p.partner?(1-(p.partner.equityPct||0)):1;}
+// A loan covers a property either directly (propId) or as part of a
+// multi-property blanket loan (propIds[]).
+function loanCovers(l,pid){return l.blanket?(l.propIds||[]).includes(pid):l.propId===pid;}
+function activeLoan(p){return G.loans.find(l=>l.status==='active'&&loanCovers(l,p.id));}
+// Per-property debt/payment — a blanket loan's balance & payment are split
+// across its covered properties in proportion to market value.
+function blanketShare(l,p){
+  const props=G.portfolio.filter(x=>(l.propIds||[]).includes(x.id));
+  const tot=props.reduce((s,x)=>s+(x.marketVal||0),0)||1;
+  return (p.marketVal||0)/tot;
+}
+function propDebt(p){const l=activeLoan(p);if(!l)return 0;return l.blanket?l.balance*blanketShare(l,p):l.balance;}
+function propPayment(p){const l=activeLoan(p);if(!l)return 0;return l.blanket?l.payment*blanketShare(l,p):l.payment;}
+function equity(p){return (p.marketVal-propDebt(p))*myShare(p);}
 function totalEquity(){return G.portfolio.reduce((s,p)=>s+equity(p),0);}
 function totalDebt(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.balance,0);}
 function totalDSvc(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.payment,0);}
 function netWorth(){return G.cash+totalEquity();}
 function portCF(){
   return G.portfolio.filter(p=>p.status==='rented').reduce((s,p)=>{
-    const l=activeLoan(p);return s+noi(p)-(l?l.payment:0);
+    return s+(noi(p)-propPayment(p))*myShare(p);
   },0);
 }
 function dscr(p,pmt){return pmt>0?noi(p)/pmt:999;}
@@ -855,6 +934,11 @@ function tick(){
         advise('BRRRR Opportunity',`${p.addr} rehab done at ARV ${fmt$(p.arv,1)}. Cash-out refi at 75% LTV returns ~${fmt$(Math.round(p.arv*.75/1000)*1000,1)} — recycle that into your next deal.`);
       }
     }
+    // Value-add (CapEx) progress — runs in parallel; property keeps its status
+    if(p.vaWeeksLeft>0){
+      p.vaWeeksLeft=Math.max(0,p.vaWeeksLeft-(rehabSpeed>1?rehabSpeed-1:0)-1);
+      if(p.vaWeeksLeft<=0) completeValueAdd(p);
+    }
     // Weekly market value drift (small random walk)
     if(p.status!=='market'&&p.marketVal>0){
       p.marketVal=Math.round(p.marketVal*(1+(Math.random()-.48)*.002)/100)*100;
@@ -876,6 +960,18 @@ function tick(){
     const p=genProp();p.offMkt=true;
     G.market.unshift(p);
     if(G.week===1) evFeed('Off-market deal found by your realtor — check Market.','info');
+  }
+
+  // Acquisitions Manager(s) feed the Deals pipeline each week
+  const acqCount=G.team.filter(t=>t.type==='acquisitions').length;
+  if(acqCount>0){
+    const tries=acqCount; // each manager gets a shot
+    for(let i=0;i<tries;i++){ if(Math.random()<.7) generateLead(); }
+  }
+  // Age out stale leads (pipeline goes cold after 10 weeks)
+  if(G.leads&&G.leads.length){
+    G.leads.forEach(l=>l.wom=(l.wom||0)+1);
+    G.leads=G.leads.filter(l=>l.wom<10);
   }
 
   // Market listings age + refresh
@@ -901,8 +997,7 @@ function tick(){
 
 // ── AUTOMATION ENGINE ──────────────────────────────
 function processAutomation(){
-  if(!G.rules||!G.rules.length)return;
-  G.rules.filter(r=>r.active).forEach(r=>{
+  (G.rules||[]).filter(r=>r.active).forEach(r=>{
     switch(r.type){
       case 'auto_rehab':
         G.portfolio.filter(p=>p.status==='vacant'&&p.cond<5).forEach(p=>{
@@ -959,8 +1054,38 @@ function processAutomation(){
           }
         });
         break;
+      case 'auto_value_add':{
+        const floor=Number(r.params.floor)||40000;
+        const roiMin=Number(r.params.roi)||1.3;
+        G.portfolio.filter(p=>(p.status==='rented'||(p.status==='vacant'&&p.cond===5))&&!p.vaWeeksLeft).forEach(p=>{
+          // pick the most cost-effective project that clears ROI and the cash floor
+          let best=null;
+          Object.keys(VALUE_ADD).forEach(k=>{
+            const d=VALUE_ADD[k],cost=vaCostOf(p,k),gain=cost*d.arvMult;
+            if(gain/cost>=roiMin&&G.cash-cost>=floor){ if(!best||cost<best.cost) best={k,cost}; }
+          });
+          if(best){ startValueAdd(p.id,best.k); evFeed(`[AUTO] Value-add started at ${p.addr} — ${VALUE_ADD[best.k].label}`,'info'); }
+        });
+        break;}
+      case 'auto_rate_refi':{
+        if(!G.team.some(t=>t.type==='broker')) break; // broker required to rate-shop
+        const trig=(Number(r.params.drop)||1.0)/100;
+        const newRate=LOANS.conv.rate-brokerRateDiscount();
+        G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&l.rate-newRate>=trig).forEach(l=>{
+          const p=G.portfolio.find(x=>x.id===l.propId);if(!p)return;
+          const bal=l.balance;l.status='paid';
+          const pmt=mpmt(bal,newRate,360);
+          G.loans.push({id:++G.lidSeq,propId:p.id,type:'conv',name:`Rate Refi — ${p.addr.split(' ').slice(0,2).join(' ')}`,rate:newRate,termMonths:360,balance:bal,payment:pmt,points:0,intOnly:false,monthsPaid:0,status:'active'});
+          G.lifetimeRefi=(G.lifetimeRefi||0)+1;
+          evFeed(`[AUTO] Rate-shop refi on ${p.addr} — ${fmtPct(l.rate)} → ${fmtPct(newRate)}`,'good');
+        });
+        break;}
+      case 'auto_tax_appeal':
+        G.portfolio.filter(p=>p.appealYear!==G.year&&(p.taxAppeal||1)>=1).forEach(p=>{ fileAppeal(p.id,true); });
+        break;
     }
   });
+  runRegionalOps(); // Regional Managers operate their assigned hoods
   // 1031 exchange countdown
   if(G.pending1031){
     G.pending1031.weeksLeft=(G.pending1031.weeksLeft||8)-1;
@@ -984,19 +1109,20 @@ function monthlyTick(){
 
   G.portfolio.forEach(p=>{
     if(p.status==='rented'){
+      const managed=hasPM||regionalActive(p.hood); // PM or Regional Manager auto-fills
       // ── Vacancy event ──
       const vacHit=Math.random()<(p.vacRate||HOODS[p.hood].vacBase);
       if(vacHit){
-        if(hasPM){
-          evFeed(`Short vacancy at ${p.addr} — PM filling unit.`,'warn');
+        if(managed){
+          evFeed(`Short vacancy at ${p.addr} — ${hasPM?'PM':'Regional Mgr'} filling unit.`,'warn');
         } else {
           evFeed(`Vacancy at ${p.addr} — lost ${fmt$(p.monthlyRent,true)} this month.`,'warn');
           p.status='vacant';p.tenant=null;
         }
       }
-      // ── Net cash flow ──
+      // ── Net cash flow (operator keeps their share on partner deals) ──
       if(p.status==='rented'){
-        const noiVal=noi(p)*txMod;
+        const noiVal=noi(p)*txMod*myShare(p);
         G.cash+=noiVal;
         ledger(`Net CF: ${p.addr}`,noiVal);
       }
@@ -1034,7 +1160,7 @@ function monthlyTick(){
             p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
             evFeed(`Tenant declined renewal at ${p.addr} — unit vacant`,'warn');
           }
-        } else if(ev<lateProb+.04+moveoutProb&&!hasPM){
+        } else if(ev<lateProb+.04+moveoutProb&&!managed){
           // Move-out notice (less likely with PM)
           p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
           evFeed(`Move-out notice at ${p.addr} — tenant leaving`,'warn');
@@ -1050,15 +1176,24 @@ function monthlyTick(){
     if(p.status==='listed') p.listWeeks=(p.listWeeks||0)+1;
   });
 
-  // Loan payments + amortization
+  // Loan payments + amortization (operator pays only their share on partner deals)
   G.loans.filter(l=>l.status==='active').forEach(l=>{
-    G.cash-=l.payment;l.monthsPaid=(l.monthsPaid||0)+1;
+    const lp=G.portfolio.find(x=>x.id===l.propId);
+    const share=myShare(lp);
+    G.cash-=l.payment*share;l.monthsPaid=(l.monthsPaid||0)+1;
     if(!l.intOnly){const i=l.balance*(l.rate/12);l.balance=Math.max(0,l.balance-(l.payment-i));}
-    ledger(`Loan pmt: ${l.name}`,-l.payment);
+    ledger(`Loan pmt: ${l.name}`,-l.payment*share);
     if(l.type==='hml'&&l.monthsPaid>=l.termMonths){
       const p=G.portfolio.find(x=>x.id===l.propId);
       evFeed(`🚨 HML balloon due on ${p?.addr||'property'}! Refinance or sell NOW.`,'bad');
       advise('HML Balloon Due',`Your hard money loan on <b>${p?.addr||'a property'}</b> has hit its balloon date. You must refinance into a long-term loan (Conventional or DSCR) or sell immediately to avoid default.`);
+    }
+    // Subject-to: the underlying lender can occasionally invoke due-on-sale
+    if(l.subTo&&l.status==='active'&&l.monthsPaid>3&&Math.random()<.012){
+      const p=G.portfolio.find(x=>x.id===l.propId);
+      l.callDue=(l.callDue||0)+1;
+      evFeed(`⚠ Due-on-sale called on ${p?.addr||'a subject-to deal'} — lender wants the assumed loan refinanced or paid off.`,'warn');
+      advise('Due-on-Sale Called',`The lender on your subject-to deal at <b>${p?.addr||'a property'}</b> has invoked the due-on-sale clause. Refinance it into your own loan (or sell) within a few months to clear the called note.`);
     }
   });
 
@@ -1138,6 +1273,20 @@ function yearlyTick(){
     p.monthlyRent+=bump;
   });
   evFeed(`Year ${G.year-1} closed — portfolio appreciated and rents grew.`,'good');
+  // Depreciation tax shield — annual deduction (a bookkeeper captures more)
+  const incTaxRate=G.team.some(t=>t.type==='bookkeeper')?.16:.12;
+  let depShield=0;
+  G.portfolio.forEach(p=>{
+    if(p.purchasePrice>0){
+      const basis=(p.purchasePrice+(p.rehabCost||0))*.8; // ~80% improvements, 20% land
+      depShield+=(basis/27.5)*incTaxRate*myShare(p);     // 27.5-yr residential schedule
+    }
+  });
+  depShield=Math.round(depShield);
+  if(depShield>0){
+    G.cash+=depShield; ledger('Depreciation tax shield',depShield);
+    evFeed(`Depreciation shield — +${fmt$(depShield,true)} tax savings for the year`,'good');
+  }
   // Slowly decay hood trends back toward 0
   if(G.hoodTrends) Object.keys(G.hoodTrends).forEach(k=>{
     if(G.hoodTrends[k]>0) G.hoodTrends[k]--;
@@ -1155,10 +1304,17 @@ function executeSale(propId){
   const costs=Math.round(price*.06);      // 6% agent + closing
   const loan=activeLoan(p);
   const payoff=loan?loan.balance:0;
-  const net=price-costs-payoff;
+  const share=myShare(p);
+  const netFull=price-costs-payoff;
+  const net=Math.round(netFull*share);    // operator's share of proceeds (partner takes the rest)
   G.cash+=net;
   if(loan)loan.status='paid';
-  const profit=price-p.purchasePrice-(p.rehabCost||0)-costs;
+  if(p.partner){
+    const partnerCut=netFull-net;
+    evFeed(`Partner ${p.partner.name} paid out ${fmt$(partnerCut,true)} (${Math.round(p.partner.equityPct*100)}% of ${p.addr})`,'info');
+    G.partners=(G.partners||[]).filter(pt=>pt.propId!==propId);
+  }
+  const profit=Math.round((price-p.purchasePrice-(p.rehabCost||0)-costs)*share);
   // Capital gains tax — 15% on profit (bookkeeper reduces to 12%)
   const hasBook=G.team.some(t=>t.type==='bookkeeper');
   const cgRate=hasBook?.12:.15;
@@ -1193,8 +1349,7 @@ function checkMilestones(){
   const nw=netWorth();
   while(G_milestoneIdx<MILESTONES.length&&nw>=MILESTONES[G_milestoneIdx].nw){
     const m=MILESTONES[G_milestoneIdx];
-    evFeed(`🏆 Milestone: ${m.msg}!`,'good');
-    advise(`Milestone: ${m.msg}`,m.tip);
+    evFeed(`🏆 Milestone: ${m.msg}!`,'good'); // sandbox: feed only, no blocking popup
     G_milestoneIdx++;
   }
   checkAchievements();
@@ -1239,6 +1394,13 @@ function loadGame(){
     G.bestDealProfit=G.bestDealProfit||0;
     G.highestNW=G.highestNW||0;
     if(G.achExpanded===undefined) G.achExpanded=false;
+    // Acquisitions / creative deals / delegation release
+    G.leads=G.leads||[];
+    G.partners=G.partners||[];
+    G.blanketLoans=G.blanketLoans||[];
+    G.brokerRel=G.brokerRel||0;
+    G.regions=G.regions||{};
+    G.lidSeqDeal=G.lidSeqDeal||0;
     updateRates();
     return true;
   }catch(e){return false;}
@@ -1264,11 +1426,18 @@ function renderTeamRoster(){
     G.team.forEach(t=>{
       const def=TEAM_TYPES[t.type];
       const cost=(def?.weeklyCost||0)*4;
+      const myHood=t.type==='regional'?Object.keys(G.regions||{}).find(h=>G.regions[h]===t.id):null;
+      const regSel=t.type==='regional'?`<div class="rdetail" style="margin-top:4px;display:flex;align-items:center;gap:5px">Manages:
+        <select onchange="assignRegion(${t.id},this.value)" style="background:var(--surface2);border:1px solid var(--line);color:var(--txt);font-size:11px;padding:2px 5px;border-radius:2px">
+          <option value="" ${!myHood?'selected':''}>— Unassigned —</option>
+          ${Object.entries(HOODS).map(([hk,h])=>`<option value="${hk}" ${myHood===hk?'selected':''} ${regionalActive(hk)&&myHood!==hk?'disabled':''}>${h.name}${regionalActive(hk)&&myHood!==hk?' (taken)':''}</option>`).join('')}
+        </select></div>`:'';
       html.push(`<div class="row" style="cursor:default">
         <div>
           <div class="rname">${def?.icon||''} ${t.name}</div>
           <div class="rdetail">${def?.role||t.type} · Hired ${t.hired}</div>
           <div class="rdetail" style="margin-top:3px;color:var(--pos)">${def?.effect||''}</div>
+          ${regSel}
         </div>
         <div class="rright">
           <div class="rprice">${cost?fmt$(cost,true)+'/mo':'Free'}</div>
@@ -1306,7 +1475,19 @@ function hirePerson(type){
   const firstNames=['Alex','Sam','Jordan','Casey','Morgan','Taylor','Jamie','Riley'];
   const lastNames=['Chen','Rivera','Patel','Johnson','Kim','Davis','Martinez','Wilson'];
   const name=`${pick(firstNames)} ${pick(lastNames)}`;
-  G.team.push({id:++teamSeq,type,name,hired:dStr()});
+  const tid=++teamSeq;
+  G.team.push({id:tid,type,name,hired:dStr()});
+  // Auto-assign a new Regional Manager to the neighborhood with the most
+  // unmanaged owned properties (they can be reassigned in the roster).
+  if(type==='regional'){
+    G.regions=G.regions||{};
+    const counts={};
+    G.portfolio.forEach(p=>{ if(!regionalActive(p.hood)) counts[p.hood]=(counts[p.hood]||0)+1; });
+    let pickHk=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+    if(!pickHk) pickHk=['A','B','C','D'].find(h=>!regionalActive(h))||'A';
+    G.regions[pickHk]=tid;
+    evFeed(`${name} now manages ${HOODS[pickHk].name} operations`,'info');
+  }
   evFeed(`Hired ${def.role}: ${name}`,'good');
   toast(`${name} is on the team!`,'good');
   renderTeam();renderAll();
@@ -1314,9 +1495,36 @@ function hirePerson(type){
 function firePerson(id){
   const t=G.team.find(x=>x.id===id);if(!t)return;
   G.team=G.team.filter(x=>x.id!==id);
+  if(G.regions){ Object.keys(G.regions).forEach(h=>{ if(G.regions[h]===id) delete G.regions[h]; }); }
   evFeed(`${TEAM_TYPES[t.type]?.role||'Team member'} ${t.name} let go.`,'warn');
   toast('Team member removed','warn');
   renderTeam();renderAll();
+}
+// Regional Manager helpers
+function regionalActive(hk){const id=(G.regions||{})[hk];return id&&G.team.some(t=>t.id===id&&t.type==='regional');}
+function assignRegion(teamId,hk){
+  G.regions=G.regions||{};
+  Object.keys(G.regions).forEach(h=>{ if(G.regions[h]===teamId) delete G.regions[h]; }); // unassign elsewhere
+  if(hk) G.regions[hk]=teamId;
+  renderTeam();renderAll();
+}
+// Auto-operate every hood that has an assigned Regional Manager.
+function runRegionalOps(){
+  if(!G.regions) return;
+  Object.keys(G.regions).forEach(hk=>{
+    if(!regionalActive(hk)) return;
+    G.portfolio.filter(p=>p.hood===hk).forEach(p=>{
+      if(p.status==='vacant'&&p.cond<5&&!p.vaWeeksLeft&&G.cash>=p.rehabEst+5000){
+        G.cash-=p.rehabEst;p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=p.rehabEst;
+        ledger(`[RM] Rehab: ${p.addr}`,-p.rehabEst);
+        evFeed(`[RM ${HOODS[hk].name}] Rehab started at ${p.addr}`,'info');
+      } else if(p.status==='vacant'&&p.cond===5){
+        p.status='rented';p.tenant=`${pick(FNAMES)} ${pick(LNAMES)}`;
+        p.tenantTier=p.tenantTier||'B';p.leaseTermMonths=12;p.leaseExpiry=calcLeaseExpiry(12);
+        evFeed(`[RM ${HOODS[hk].name}] Tenant placed at ${p.addr} — ${fmt$(p.monthlyRent,true)}/mo`,'good');
+      }
+    });
+  });
 }
 
 // ── EVENTS / LEDGER ────────────────────────────────
@@ -1731,6 +1939,156 @@ function sourceWholesaleDeal(){
   renderMarket();
 }
 
+// ── ACQUISITION PIPELINE (leads) ───────────────────
+// Lead types the Acquisitions Manager surfaces. Leads live in G.leads
+// (the Deals drawer) until you "pursue" one, which drops it into the
+// market and opens the buy modal so all existing buy machinery applies.
+const LEAD_TYPES={
+  driving:{label:'Off-Market',badge:'OFF-MKT',cls:'tag-info',hoodPool:['A','B','B','C','C','D'],condPool:[2,3,3,4,5],discLo:.80,discHi:.93},
+  reo:    {label:'Bank REO',  badge:'REO',    cls:'tag-warn',hoodPool:['B','C','C','D','D'],  condPool:[1,2,2,3],  discLo:.62,discHi:.80},
+  preforeclosure:{label:'Pre-Foreclosure',badge:'PRE-FC',cls:'tag-neg',hoodPool:['B','C','C','D'],condPool:[2,3,3,4],discLo:.70,discHi:.86,subTo:true},
+};
+function generateLead(){
+  if(!G.leads) G.leads=[];
+  if(G.leads.length>=8) return; // pipeline cap
+  const kind=pick(['driving','driving','reo','preforeclosure']);
+  const def=LEAD_TYPES[kind];
+  const p=genProp(pick(def.hoodPool),pick(def.condPool));
+  p.dealType=kind;
+  p.leadId=++G.lidSeqDeal;
+  p.ask=Math.round(p.arv*rnd(def.discLo,def.discHi)/1000)*1000;
+  p.offMkt=true; p.wom=0;
+  // Pre-foreclosure deals carry an assumable seller loan (subject-to candidate)
+  if(def.subTo){
+    const bal=Math.round(p.ask*rnd(.55,.85)/1000)*1000;
+    p.sellerLoan={balance:bal,rate:rnd(.035,.06),termMonths:360,payment:Math.round(mpmt(bal,rnd(.035,.06),360))};
+    p.subToEligible=true;
+  }
+  G.leads.unshift(p);
+  evFeed(`🎯 Acquisitions: ${def.label} lead — ${p.addr} at ${fmt$(p.ask,true)} (ARV ${fmt$(p.arv,true)})`,'info');
+  if(typeof renderDealsDrawer==='function') renderDealsDrawer();
+}
+function pursueLead(leadId){
+  const idx=(G.leads||[]).findIndex(l=>l.leadId===leadId);
+  if(idx<0){toast('Lead no longer available','bad');return;}
+  const p=G.leads[idx];
+  G.leads.splice(idx,1);
+  p.wom=0;
+  G.market.unshift(p); // hand off to the normal market/buy flow
+  if(typeof renderDealsDrawer==='function') renderDealsDrawer();
+  renderMarket();
+  closeDealsDrawer();
+  openBuyModal(p.id);
+}
+function dismissLead(leadId){
+  G.leads=(G.leads||[]).filter(l=>l.leadId!==leadId);
+  if(typeof renderDealsDrawer==='function') renderDealsDrawer();
+  toast('Lead dismissed','warn');
+}
+
+// ── DEALS DRAWER ───────────────────────────────────
+let G_dealsTab='pipeline';
+function openDealsDrawer(){
+  renderDealsDrawer();
+  document.getElementById('dealsOv').classList.remove('hide');
+}
+function closeDealsDrawer(){document.getElementById('dealsOv').classList.add('hide');}
+function setDealsTab(t,el){
+  G_dealsTab=t;
+  document.querySelectorAll('#dealsSubtab .segchip').forEach(c=>c.classList.remove('on'));
+  if(el) el.classList.add('on');
+  renderDealsDrawer();
+}
+function updateDealsBadge(){
+  const n=(G.leads||[]).length;
+  const el=document.getElementById('dealsCount');
+  if(el){el.textContent=n;el.style.display=n>0?'':'none';}
+}
+function renderDealsDrawer(){
+  updateDealsBadge();
+  const el=document.getElementById('dealsBody');
+  if(!el) return;
+  if(G_dealsTab==='creative'){ el.innerHTML=renderCreativeTab(); return; }
+  if(G_dealsTab==='partners'){ el.innerHTML=renderPartnersTab(); return; }
+  // Pipeline
+  const hasAcq=G.team.some(t=>t.type==='acquisitions');
+  const leads=G.leads||[];
+  if(!leads.length){
+    el.innerHTML=`<div class="subnote" style="padding:16px 14px;text-align:center;color:var(--txt-dim)">
+      ${hasAcq?'Your Acquisitions Manager is working leads — new off-market and REO deals will appear here as weeks pass.'
+              :'No pipeline yet. Hire an <b>Acquisitions Manager</b> in Team to source off-market and pre-foreclosure/REO deals every week.'}
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div class="subnote" style="padding:6px 14px 2px">Sourced deals expire if not pursued. "Pursue" moves a lead into Market and opens the offer.</div>`+
+  leads.map(p=>{
+    const def=LEAD_TYPES[p.dealType]||LEAD_TYPES.driving;
+    const spread=p.arv-p.ask-p.rehabEst;
+    return`<div class="lead-card ${p.dealType}">
+      <div class="lead-head">
+        <div style="min-width:0">
+          <div class="rname" style="font-size:13px">${p.addr}</div>
+          <div class="rdetail">${p.ptype} · ${p.sqft.toLocaleString()} sqft · <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span> <span class="rtag ${def.cls}">${def.badge}</span>${p.subToEligible?' <span class="rtag tag-warn">SUB-TO</span>':''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="rprice warn">${fmt$(p.ask,true)}</div>
+          <div class="rdetail">ARV ${fmt$(p.arv,true)}</div>
+        </div>
+      </div>
+      <div class="pstat-box" style="margin:0 12px">
+        <div class="pstat"><div class="psl">Ask</div><div class="psv warn">${fmt$(p.ask,true)}</div></div>
+        <div class="pstat"><div class="psl">Rehab</div><div class="psv">${fmt$(p.rehabEst,true)}</div></div>
+        <div class="pstat"><div class="psl">Spread</div><div class="psv ${spread>0?'pos':'neg'}">${fmt$(spread,true)}</div></div>
+        <div class="pstat"><div class="psl">Cond</div><div class="psv">${COND_LBL[p.cond]}</div></div>
+      </div>
+      <div class="lead-acts">
+        <button class="mbtn sm pri" onclick="pursueLead(${p.leadId})">Pursue Deal →</button>
+        <button class="mbtn sm" onclick="dismissLead(${p.leadId})">Dismiss</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+// Placeholders filled in Phase 4 (creative financing + partners)
+function renderCreativeTab(){
+  return `<div class="subnote" style="padding:16px 14px;line-height:1.6">
+    <b>Creative financing</b> is applied when you make an offer:
+    <br>• <b>Subject-to</b> — assume a seller's existing loan (look for SUB-TO leads in Pipeline).
+    <br>• <b>Wholesale assignment</b> — flip a contract for a fee from the buy screen.
+    <br>• <b>Money partners</b> — fund a deal with a partner from the buy screen.
+  </div>`;
+}
+function renderPartnersTab(){
+  const partners=G.partners||[];
+  if(!partners.length) return `<div class="subnote" style="padding:16px 14px;text-align:center;color:var(--txt-dim)">No active partner deals. Bring a money partner into a purchase from the buy screen — they fund the cash, you collect a fee + a share of the profits.</div>`;
+  return partners.map(pt=>`<div class="lead-card" style="border-left-color:var(--pos)">
+    <div class="lead-head"><div><div class="rname" style="font-size:13px">${pt.addr}</div><div class="rdetail">${pt.name} · funded ${fmt$(pt.funded,true)}</div></div>
+    <div style="text-align:right"><div class="rprice pos">${Math.round(pt.equityPct*100)}%</div><div class="rdetail">partner share</div></div></div>
+  </div>`).join('');
+}
+
+// ── FINANCING / CREATIVE HELPERS ───────────────────
+// Mortgage Broker shaves your rate; the discount deepens as your lender
+// relationship (brokerRel) grows with each financed/refinanced deal.
+function brokerRateDiscount(){
+  if(!G.team.some(t=>t.type==='broker')) return 0;
+  return Math.min(.0150,.0035+(G.brokerRel||0)*.001);
+}
+// Wholesale assignment — flip a contract for a fee without ever owning it.
+function assignContract(propId){
+  const p=G.market.find(x=>x.id===propId);
+  if(!p){toast('Deal no longer available','bad');return;}
+  const spread=p.arv-p.ask-p.rehabEst;
+  if(spread<5000){toast('Not enough spread to assign — buyers need meat on the bone','bad');return;}
+  const fee=Math.min(45000,Math.max(4000,Math.round(spread*rnd(.22,.38)/500)*500));
+  G.cash+=fee;
+  ledger(`Wholesale assignment: ${p.addr}`,fee);
+  evFeed(`Assigned contract on ${p.addr} for a ${fmt$(fee,true)} fee — no purchase, pure spread`,'good');
+  toast(`+${fmt$(fee,true)} assignment fee!`,'good');
+  G.market=G.market.filter(x=>x.id!==propId);
+  G.lifetimeAcquired=(G.lifetimeAcquired||0)+0; // not an acquisition
+  closeModal();renderAll();
+}
+
 // ── SELLER FINANCING ───────────────────────────────
 function executeSFSale(propId){
   const p=G.portfolio.find(x=>x.id===propId);if(!p)return;
@@ -1746,10 +2104,12 @@ function executeSFSale(propId){
     netDown=down-loan.balance;
     loan.status='paid';
   }
-  G.cash+=netDown;
+  const sfShare=myShare(p);
+  if(p.partner){ G.partners=(G.partners||[]).filter(pt=>pt.propId!==propId); }
+  G.cash+=Math.round(netDown*sfShare);
   G.notes.push({
-    id:++G.lidSeq,addr:p.addr,balance:principal,originalBalance:principal,
-    rate,payment:pmt,termMonths:360,monthsPaid:0,
+    id:++G.lidSeq,addr:p.addr,balance:Math.round(principal*sfShare),originalBalance:Math.round(principal*sfShare),
+    rate,payment:Math.round(pmt*sfShare),termMonths:360,monthsPaid:0,
     buyerName:`${pick(FNAMES)} ${pick(LNAMES)}`,status:'active'
   });
   const profit=Math.round(price-p.purchasePrice-(p.rehabCost||0)-price*.06);
@@ -1875,35 +2235,12 @@ function toggleWatch(propId){
 
 // ── WIN CONDITION ──────────────────────────────────
 function checkWin(){
+  // Sandbox mode: the $5M mark is a celebration milestone, not a blocking win screen.
   if(G.won) return;
   if(netWorth()<5000000) return;
   G.won=true;
-  const sc=portfolioScore();
-  const gradeClr=sc.grade.startsWith('A')?'var(--pos)':sc.grade.startsWith('B')?'var(--info)':sc.grade.startsWith('C')?'var(--warn)':'var(--neg)';
-  const yrs=G.year-2024;
-  const tot=G.portfolio.reduce((s,p)=>s+(p.marketVal||0),0);
-  document.getElementById('modalBox').innerHTML=`
-    <div class="x" onclick="closeModal()">×</div>
-    <div style="text-align:center;padding:18px 0 10px">
-      <div style="font-size:52px;line-height:1">🏆</div>
-      <div style="font-family:var(--mono);font-size:36px;font-weight:700;margin:6px 0 2px;color:#f5c518">$5M REACHED</div>
-      <div style="font-size:11px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase">Real Estate Empire Built</div>
-    </div>
-    <div style="text-align:center;margin:10px 0 14px;padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--line)">
-      <div style="font-family:var(--mono);font-size:44px;font-weight:700;color:${gradeClr};line-height:1">${sc.grade}</div>
-      <div style="font-size:10px;color:var(--txt-dim);margin-top:4px">Final Portfolio Grade · ${sc.score}/100</div>
-    </div>
-    <div class="card" style="margin:0 0 14px">
-      <div class="frow"><span class="fl">Net Worth</span><span class="fv pos">${fmt$(netWorth())}</span></div>
-      <div class="frow"><span class="fl">Portfolio Value</span><span class="fv">${fmt$(tot)}</span></div>
-      <div class="frow"><span class="fl">Properties Owned</span><span class="fv">${G.portfolio.length}</span></div>
-      <div class="frow"><span class="fl">Years to $5M</span><span class="fv">${yrs} year${yrs===1?'':'s'}</span></div>
-      <div class="frow"><span class="fl">Total Acquired</span><span class="fv">${G.lifetimeAcquired||0} deals</span></div>
-      <div class="frow tot"><span class="fl">Cash on Hand</span><span class="fv pos">${fmt$(G.cash)}</span></div>
-    </div>
-    <button class="mbtn pri wide" onclick="closeModal()" style="margin-bottom:8px">Play On →</button>`;
-  document.getElementById('modalOv').classList.remove('hide');
-  evFeed('🏆 $5M NET WORTH ACHIEVED — Empire built!','good');
+  evFeed('🏆 $5M NET WORTH REACHED — empire built! Keep building.','good');
+  toast('🏆 $5M net worth reached!','good');
   saveGame();
 }
 
@@ -2084,13 +2421,61 @@ function showYearReport(yr){
 function applyLOC(){
   const nw=netWorth();
   if(nw<25000){toast('Need $25k+ net worth to qualify','bad');return;}
-  G.loc.limit=Math.round(Math.min(500000,nw*.20)/1000)*1000;
-  G.loc.rate=G.primeRate+.025;
+  // Mortgage Broker unlocks a larger, cheaper portfolio credit facility
+  const hasBroker=G.team.some(t=>t.type==='broker');
+  if(hasBroker){
+    G.loc.limit=Math.round(Math.min(2000000,Math.max(totalEquity(),nw)*.55)/1000)*1000;
+    G.loc.rate=G.primeRate+.012;
+    G.loc.facility=true;
+  } else {
+    G.loc.limit=Math.round(Math.min(500000,nw*.20)/1000)*1000;
+    G.loc.rate=G.primeRate+.025;
+    G.loc.facility=false;
+  }
   G.loc.status='active';
   G.loc.balance=0;
-  evFeed(`Credit line approved — ${fmt$(G.loc.limit,true)} at ${fmtPct(G.loc.rate)}`,'good');
-  toast(`LOC approved: ${fmt$(G.loc.limit,true)}`,'good');
+  evFeed(`${hasBroker?'Portfolio credit facility':'Credit line'} approved — ${fmt$(G.loc.limit,true)} at ${fmtPct(G.loc.rate)}`,'good');
+  toast(`Approved: ${fmt$(G.loc.limit,true)}`,'good');
   renderFin();
+}
+// ── BLANKET LOAN (consolidate several loans into one) ──
+function openBlanketModal(){
+  const eligible=G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&(l.type==='conv'||l.type==='dscr'||l.subTo));
+  if(eligible.length<2){toast('Need 2+ amortizing loans to consolidate','bad');closeModal();return;}
+  const rows=eligible.map(l=>{
+    const p=G.portfolio.find(x=>x.id===l.propId);
+    return`<label class="lender-row" style="cursor:pointer">
+      <div class="lender-main"><div class="lender-name"><input type="checkbox" class="blk-pick" value="${l.id}" checked style="margin-right:7px">${p?.addr||l.name}</div>
+      <div class="lender-sub">${fmt$(l.balance,true)} @ ${fmtPct(l.rate)} · ${fmt$(l.payment,true)}/mo</div></div>
+    </label>`;
+  }).join('');
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>🏦 Blanket Loan</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Combine selected loans into a single blanket loan at a balance-weighted blended rate (30-yr). One payment, less paperwork. Balance is allocated across properties by value.</div></div>
+    <div class="lender-list">${rows}</div>
+    <div style="display:flex;gap:7px;margin-top:12px">
+      <button class="mbtn green" onclick="consolidateLoans()">Consolidate →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function consolidateLoans(){
+  const ids=[...document.querySelectorAll('.blk-pick:checked')].map(c=>+c.value);
+  if(ids.length<2){toast('Pick at least 2 loans','bad');return;}
+  const loans=G.loans.filter(l=>ids.includes(l.id)&&l.status==='active');
+  const totBal=loans.reduce((s,l)=>s+l.balance,0);
+  const blended=loans.reduce((s,l)=>s+l.rate*l.balance,0)/totBal-brokerRateDiscount()*.5;
+  const rate=Math.max(.02,blended);
+  const propIds=loans.map(l=>l.propId).filter(Boolean);
+  const pmt=mpmt(totBal,rate,360);
+  loans.forEach(l=>l.status='paid');
+  G.loans.push({id:++G.lidSeq,blanket:true,propIds,type:'conv',
+    name:`Blanket Loan (${propIds.length})`,rate,termMonths:360,balance:totBal,payment:pmt,
+    points:0,intOnly:false,monthsPaid:0,status:'active'});
+  evFeed(`Consolidated ${loans.length} loans into a ${fmt$(totBal,true)} blanket at ${fmtPct(rate)} — ${fmt$(pmt,true)}/mo`,'good');
+  toast('Blanket loan created','good');
+  closeModal();renderAll();
 }
 
 function openLOCModal(){
@@ -2185,7 +2570,7 @@ function renderLOCSection(){
 }
 
 // ── RENDERS ─────────────────────────────────────────
-function renderAll(){renderHeader();renderDash();renderMarket();renderPort();renderFin();renderTeam();renderLedger();}
+function renderAll(){renderHeader();renderDash();renderMarket();renderPort();renderFin();renderTeam();renderLedger();updateDealsBadge();}
 
 function renderHeader(){
   const nw=netWorth(),cf=portCF();
@@ -2341,7 +2726,7 @@ function renderPort(){
   note.textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · Net Worth ${fmt$(netWorth())} · Monthly CF ${fmtCF(portCF())}`;
   const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info'};
   el.innerHTML=G.portfolio.map(p=>{
-    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?noi(p)-(l?l.payment:0):0;
+    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(noi(p)-propPayment(p))*myShare(p):0;
     const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
     return`<div class="own-card">
       <div class="own-head">
@@ -2352,15 +2737,16 @@ function renderPort(){
         </div>
       </div>
       ${p.status==='rehab'?`<div class="prog-wrap"><div class="prog-lbl">${p.rehabWeeksLeft} weeks left in rehab</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
+      ${p.vaWeeksLeft>0?`<div class="prog-wrap"><div class="prog-lbl" style="color:var(--info)">${VALUE_ADD[p.vaProject]?.icon||''} ${VALUE_ADD[p.vaProject]?.label||'Value-add'} — ${p.vaWeeksLeft}wk left</div><div class="prog-bar"><div class="prog-fill" style="width:${Math.round((1-p.vaWeeksLeft/(p.vaWksTotal||1))*100)}%;background:var(--info)"></div></div></div>`:''}
       <div class="own-stats">
         <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
-        <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(l.balance,true):'No loan'}</div></div>
+        <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?(l.blanket?'Blanket ':'Debt ')+fmt$(propDebt(p),true):'No loan'}</div></div>
         <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${fmtCF(cf)}</div><div class="od">${p.status==='rented'?fmt$(p.monthlyRent,true)+' rent':'Not rented'}</div></div>
       </div>
       <div class="own-acts">
         ${p.status==='vacant'&&p.cond<5?`<button class="mbtn sm warn" onclick="startRehab(${p.id})">Start Rehab ${fmt$(p.rehabEst,true)}</button><button class="mbtn sm" onclick="openListModal(${p.id})">List As-Is</button>`:''}
-        ${p.status==='vacant'&&p.cond===5?`<button class="mbtn sm green" onclick="openTenantTierModal(${p.id})">Rent Out</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
-        ${p.status==='rented'?`<button class="mbtn sm" onclick="openMgmtModal(${p.id})">Manage</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>`:''}
+        ${p.status==='vacant'&&p.cond===5?`<button class="mbtn sm green" onclick="openTenantTierModal(${p.id})">Rent Out</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>${p.vaWeeksLeft>0?'':`<button class="mbtn sm" onclick="openValueAddModal(${p.id})">Value-Add</button>`}`:''}
+        ${p.status==='rented'?`<button class="mbtn sm" onclick="openMgmtModal(${p.id})">Manage</button><button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button><button class="mbtn sm" onclick="openRefiModal(${p.id})">Refinance</button>${p.vaWeeksLeft>0?'':`<button class="mbtn sm" onclick="openValueAddModal(${p.id})">Value-Add</button>`}`:''}
         ${p.status==='rehab'?`<span style="font-size:10.5px;color:var(--warn)">Rehab in progress…</span>`:''}
         ${p.status==='listed'?`<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`:''}
         <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
@@ -2379,13 +2765,23 @@ function renderFin(){
   const ll=document.getElementById('loanList');
   if(!active.length){ll.innerHTML='<div class="subnote" style="padding:20px;text-align:center">No active loans.</div>';}
   else{ll.innerHTML=active.map(l=>{
-    const p=G.portfolio.find(x=>x.id===l.propId);
-    const ltv=p&&p.marketVal?l.balance/p.marketVal:0;
+    let propLabel,ltv;
+    if(l.blanket){
+      const props=G.portfolio.filter(x=>(l.propIds||[]).includes(x.id));
+      const totVal=props.reduce((s,x)=>s+(x.marketVal||0),0);
+      propLabel=`Blanket · ${props.length} propert${props.length===1?'y':'ies'}`;
+      ltv=totVal?l.balance/totVal:0;
+    } else {
+      const p=G.portfolio.find(x=>x.id===l.propId);
+      propLabel=p?.addr||(l.subTo?'Subject-To':'Unknown');
+      ltv=p&&p.marketVal?l.balance/p.marketVal:0;
+    }
     const rem=l.termMonths-(l.monthsPaid||0);
-    return`<div class="loan-card ${l.type}">
+    const badgeType=l.blanket?'Blanket':l.subTo?'SUB-TO':l.type.toUpperCase();
+    return`<div class="loan-card ${l.blanket?'conv':l.type}">
       <div class="loan-head">
-        <div><div class="loan-name">${l.name}</div><div class="loan-prop">${p?.addr||'Unknown'}</div></div>
-        <span class="badge ${l.type==='hml'?'neg':l.type==='conv'?'pos':l.type==='dscr'?'info':'warn'}">${l.type.toUpperCase()}</span>
+        <div><div class="loan-name">${l.name}</div><div class="loan-prop">${propLabel}</div></div>
+        <span class="badge ${l.blanket?'info':l.type==='hml'?'neg':l.type==='conv'?'pos':l.type==='dscr'?'info':'warn'}">${badgeType}</span>
       </div>
       <div class="loan-nums">
         <div class="lcell"><div class="ll">Balance</div><div class="lv neg">${fmt$(l.balance,true)}</div></div>
@@ -2395,6 +2791,14 @@ function renderFin(){
       </div>
     </div>`;
   }).join('');
+  }
+  // Blanket-loan consolidation (Mortgage Broker)
+  const blanketEligible=G.team.some(t=>t.type==='broker')&&G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&(l.type==='conv'||l.type==='dscr'||l.subTo)).length>=2;
+  if(blanketEligible){
+    ll.innerHTML+=`<div style="margin:8px 12px 0;padding:10px 12px;background:var(--surface);border:1px solid var(--info);border-radius:2px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:11.5px;font-weight:700">🏦 Consolidate into a Blanket Loan</div><div style="font-size:10px;color:var(--txt-dim);margin-top:2px">Roll multiple loans into one at a blended rate</div></div>
+      <button class="mbtn sm info" onclick="openBlanketModal()">Combine →</button>
+    </div>`;
   }
   renderLOCSection();
   renderNotesSection();
@@ -2445,20 +2849,40 @@ function openPropModal(id){
 function openBuyModal(id){
   const p=G.market.find(x=>x.id===id);
   if(!p){toast('Property no longer available','bad');return;}
-  let selLoan='conv', offerAmt=p.ask;
+  const subEligible=!!(p.subToEligible&&p.sellerLoan);
+  const brokerDisc=brokerRateDiscount();
+  let selLoan=(subEligible?'subto':'conv'), offerAmt=p.ask, usePartner=false;
+  // Per-option financing math (handles subject-to specially)
+  const calcFor=(k,price)=>{
+    if(k==='subto'){
+      const sl=p.sellerLoan;
+      const closing=Math.round(price*.015);
+      const cashToSeller=Math.max(0,price-sl.balance);
+      return{name:'Subject-To',down:cashToSeller,principal:sl.balance,closing,pts:0,
+        totalCash:cashToSeller+closing,pmt:sl.payment,rate:sl.rate,intOnly:false,term:sl.termMonths,
+        sub:`Assume ${fmt$(sl.balance,true)} @ ${fmtPct(sl.rate)} · cash to seller ${fmt$(cashToSeller,true)}`};
+    }
+    const lo=LOANS[k];
+    const rate=Math.max(.02,lo.rate-(k==='cash'?0:brokerDisc));
+    const down=Math.round(price*lo.down);
+    const principal=price-down;
+    const closing=Math.round(price*.025);
+    const pts=Math.round(principal*lo.points);
+    const pmt=lo.intOnly?ioPmt(principal,rate):mpmt(principal,rate,lo.term);
+    return{name:lo.name,down,principal,closing,pts,totalCash:down+closing+pts,pmt,rate,intOnly:lo.intOnly,term:lo.term,
+      sub:`${lo.down*100}% down · ${lo.intOnly?'Int-only':'Amortizing'} · ${lo.term?lo.term+'mo term':'No debt'}${lo.points?` · ${lo.points*100}pts`:''}`};
+  };
   const render=()=>{
-    const lo=LOANS[selLoan];
-    const eff=Math.min(offerAmt,p.ask*1.1);
-    const down=Math.round(eff*lo.down/100)*100;
-    const principal=eff-down;
-    const closing=Math.round(eff*.025/100)*100; // 2.5% closing costs
-    const pts=Math.round(principal*lo.points/100)*100;
-    const totalCash=down+closing+pts;
-    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
+    const f=calcFor(selLoan,offerAmt);
+    const rehabNeed=p.cond<5?p.rehabEst:0;
     const noiVal=noi({...p,marketVal:p.arv,mgmtPct:0,hoa:0,vacRate:HOODS[p.hood].vacBase});
-    const dscrVal=pmt>0?noiVal/pmt:999;
+    const dscrVal=f.pmt>0?noiVal/f.pmt:999;
     const canConv=G.loans.filter(l=>l.status==='active'&&l.type==='conv').length<10;
-    const canAfford=G.cash>=totalCash;
+    const allInCash=f.totalCash+rehabNeed;
+    const yourCash=usePartner?0:allInCash;
+    const canAfford=usePartner?true:(G.cash>=yourCash);
+    const spread=p.arv-p.ask-p.rehabEst;
+    const opts=(subEligible?['subto']:[]).concat(Object.keys(LOANS));
     document.getElementById('buyContent').innerHTML=`
       <div class="fq" style="margin-bottom:10px">
         <div class="fqL">Your Offer</div>
@@ -2468,45 +2892,56 @@ function openBuyModal(id){
       </div>
       <div class="sec" style="padding:8px 0 5px"><h2>Financing</h2><div class="rule"></div></div>
       <div class="lender-list">
-        ${Object.entries(LOANS).map(([k,l])=>{
-          const dn=Math.round(eff*l.down);
-          const pr=eff-dn;
-          const pm=l.intOnly?ioPmt(pr,l.rate):mpmt(pr,l.rate,l.term);
-          const tc=dn+Math.round(eff*.025)+Math.round(pr*l.points);
-          const ok=G.cash>=tc;
-          const locked=(k==='conv'&&!canConv)||(k==='dscr'&&dscrVal<1.25&&pmt>0);
-          return`<div class="lender-row${selLoan===k?' sel':''}${locked?' dim':''}" onclick="${locked?'':'selLoanType(\''+k+'\')'}">
+        ${opts.map(k=>{
+          const c=calcFor(k,offerAmt);
+          const rowDscr=c.pmt>0?noiVal/c.pmt:999;
+          const locked=(k==='conv'&&!canConv)||(k==='dscr'&&rowDscr<1.25&&c.pmt>0);
+          const isSub=k==='subto';
+          return`<div class="lender-row${selLoan===k?' sel':''}${locked?' dim':''}" style="${isSub?'border-left:3px solid var(--warn)':''}" onclick="${locked?'':'selLoanType(\''+k+'\')'}">
             <div class="lender-main">
-              <div class="lender-name">${l.name}</div>
-              <div class="lender-sub">${l.down*100}% down · ${l.intOnly?'Int-only':'Amortizing'} · ${l.term?l.term+'mo term':'No debt'}${l.points?` · ${l.points*100}pts`:''}${locked?' · ⚠ Not available':''}</div>
+              <div class="lender-name">${c.name}${isSub?' <span class="rtag tag-warn">CREATIVE</span>':''}</div>
+              <div class="lender-sub">${c.sub}${locked?' · ⚠ Not available':''}</div>
             </div>
             <div class="lender-right">
-              <div class="lender-rate">${l.rate>0?fmtPct(l.rate):'0%'}</div>
-              <div class="lender-note">${fmt$(tc,true)} cash needed</div>
+              <div class="lender-rate">${c.rate>0?fmtPct(c.rate):'0%'}</div>
+              <div class="lender-note">${fmt$(c.totalCash,true)} cash needed</div>
             </div>
           </div>`;
         }).join('')}
       </div>
+      ${brokerDisc>0&&selLoan!=='cash'&&selLoan!=='subto'?`<div class="acc-hint acc-good" style="margin-top:6px">🏦 Mortgage Broker: rate reduced ${fmtPct(brokerDisc,2)} (relationship lvl ${G.brokerRel||0})</div>`:''}
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:10px 12px;margin-top:10px">
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer">
+          <input type="checkbox" id="partnerCheck" ${usePartner?'checked':''} onchange="togglePartner()" style="width:15px;height:15px;margin-top:2px;flex-shrink:0">
+          <div>
+            <div style="font-size:11.5px;font-weight:700">Fund with a money partner (operator deal)</div>
+            <div style="font-size:9.5px;color:var(--txt-dim);margin-top:2px">Partner covers all cash (incl. rehab). You pay $0, collect a ~2% acquisition fee now, and keep 30% of cash flow + profits. Partner owns 70%.</div>
+          </div>
+        </label>
+      </div>
       <div class="card" style="margin:10px 0 0">
         <div class="frow"><span class="fl">Offer Price</span><span class="fv warn">${fmt$(offerAmt)}</span></div>
-        <div class="frow"><span class="fl">Down Payment (${lo.down*100}%)</span><span class="fv">${fmt$(down)}</span></div>
-        <div class="frow"><span class="fl">Closing Costs (~2.5%)</span><span class="fv">${fmt$(closing)}</span></div>
-        ${pts?`<div class="frow"><span class="fl">Points (${lo.points*100}%)</span><span class="fv">${fmt$(pts)}</span></div>`:''}
-        ${p.cond<5?`<div class="frow"><span class="fl">Rehab Budget</span><span class="fv warn">${fmt$(p.rehabEst)} · ${REHAB_WKS[p.cond]}wk</span></div>`:''}
-        <div class="frow tot"><span class="fl">Total All-In Cash</span><span class="fv ${G.cash>=(totalCash+(p.cond<5?p.rehabEst:0))?'pos':'neg'}">${fmt$(totalCash+(p.cond<5?p.rehabEst:0))}</span></div>
-        <div class="frow"><span class="fl">Your Cash</span><span class="fv">${fmt$(G.cash)}</span></div>
-        ${selLoan!=='cash'?`<div class="frow"><span class="fl">Loan Amount</span><span class="fv">${fmt$(principal)}</span></div>
-        <div class="frow"><span class="fl">Monthly Payment</span><span class="fv">${fmt$(pmt)}/mo</span></div>
-        <div class="frow"><span class="fl">DSCR</span><span class="fv ${dscrVal>=1.25?'pos':dscrVal>=1?'warn':'neg'}">${dscrVal===999?'∞':dscrVal.toFixed(2)} (min 1.25 for DSCR loan)</span></div>`:''}
+        <div class="frow"><span class="fl">${selLoan==='subto'?'Cash to Seller':'Down Payment'}</span><span class="fv">${fmt$(f.down)}</span></div>
+        <div class="frow"><span class="fl">Closing Costs</span><span class="fv">${fmt$(f.closing)}</span></div>
+        ${f.pts?`<div class="frow"><span class="fl">Points</span><span class="fv">${fmt$(f.pts)}</span></div>`:''}
+        ${rehabNeed?`<div class="frow"><span class="fl">Rehab Budget</span><span class="fv warn">${fmt$(rehabNeed)} · ${REHAB_WKS[p.cond]}wk</span></div>`:''}
+        <div class="frow tot"><span class="fl">Total All-In Cash</span><span class="fv ${usePartner?'pos':(G.cash>=allInCash?'pos':'neg')}">${usePartner?'Partner-funded':fmt$(allInCash)}</span></div>
+        ${usePartner?`<div class="frow"><span class="fl">Your Acquisition Fee</span><span class="fv pos">+${fmt$(Math.round(offerAmt*.02))}</span></div>
+        <div class="frow"><span class="fl">Your Share</span><span class="fv">30% cash flow + profit</span></div>`:`<div class="frow"><span class="fl">Your Cash</span><span class="fv">${fmt$(G.cash)}</span></div>`}
+        ${selLoan!=='cash'?`<div class="frow"><span class="fl">Loan Amount</span><span class="fv">${fmt$(f.principal)}</span></div>
+        <div class="frow"><span class="fl">Monthly Payment</span><span class="fv">${fmt$(f.pmt)}/mo</span></div>
+        <div class="frow"><span class="fl">DSCR</span><span class="fv ${dscrVal>=1.25?'pos':dscrVal>=1?'warn':'neg'}">${dscrVal===999?'∞':dscrVal.toFixed(2)}</span></div>`:''}
       </div>
       <div style="margin-top:12px;display:flex;gap:7px;flex-wrap:wrap">
-        <button class="mbtn green" ${canAfford?'':'disabled'} onclick="executeBuy(${p.id},'${selLoan}',${offerAmt})">Buy for ${fmt$(offerAmt,true)} →</button>
+        <button class="mbtn green" ${canAfford?'':'disabled'} onclick="executeBuy(${p.id},'${selLoan}',${offerAmt},${usePartner})">${usePartner?'Partner Buy':'Buy'} ${fmt$(offerAmt,true)} →</button>
+        ${spread>=5000?`<button class="mbtn warn" onclick="assignContract(${p.id})" title="Flip the contract for a fee">Assign (~${fmt$(Math.min(45000,Math.max(4000,Math.round(spread*.3/500)*500)),true)})</button>`:''}
         <button class="mbtn" onclick="closeModal()">Cancel</button>
       </div>
-      ${!canAfford?`<div class="subnote" style="padding:6px 0;color:var(--neg)">⚠ Need ${fmt$(totalCash-G.cash)} more cash for this deal.</div>`:''}`;
+      ${!canAfford?`<div class="subnote" style="padding:6px 0;color:var(--neg)">⚠ Need ${fmt$(allInCash-G.cash)} more cash — or fund it with a partner.</div>`:''}`;
   };
   window.selLoanType=(k)=>{selLoan=k;render();};
   window.renderBuy=render;
+  window.togglePartner=()=>{usePartner=!usePartner;render();};
   window.updateOffer=(v)=>{offerAmt=parseInt(v)||0;render();const inp=document.getElementById('offerInput');if(inp){inp.focus();}};
   document.getElementById('modalBox').innerHTML=`
     <div class="x" onclick="closeModal()">×</div>
@@ -2524,7 +2959,7 @@ function openBuyModal(id){
   document.getElementById('modalOv').classList.remove('hide');
 }
 
-function executeBuy(propId, loanType, offerPrice){
+function executeBuy(propId, loanType, offerPrice, usePartner){
   const p=G.market.find(x=>x.id===propId);
   if(!p){toast('Property no longer available','bad');return;}
   // Offer rejection — deep discounts carry risk in seller/balanced markets
@@ -2538,40 +2973,73 @@ function executeBuy(propId, loanType, offerPrice){
       closeModal();return;
     }
   }
-  const lo=LOANS[loanType];
-  const down=Math.round(offerPrice*lo.down);
-  const principal=offerPrice-down;
-  const closing=Math.round(offerPrice*.025);
-  const pts=Math.round(principal*lo.points);
-  const totalCash=down+closing+pts;
-  if(G.cash<totalCash){toast('Not enough cash!','bad');return;}
-  // Execute
-  G.cash-=totalCash;
-  p.status=loanType==='cash'?'vacant':'vacant';
-  p.purchasePrice=offerPrice;
-  p.cashInvested=totalCash;
-  p.marketVal=offerPrice;
-  // Loan
-  if(loanType!=='cash'){
-    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
-    G.loans.push({
-      id:++G.lidSeq, propId:p.id, type:loanType,
-      name:`${lo.name} — ${p.addr.split(' ').slice(0,2).join(' ')}`,
-      rate:lo.rate, termMonths:lo.term, balance:principal, payment:pmt,
-      points:pts, intOnly:lo.intOnly, monthsPaid:0, status:'active'
-    });
+  // ── Determine cash + loan structure by financing type ──
+  const brokerDisc=brokerRateDiscount();   // Mortgage Broker shaves the rate
+  let down,principal,closing,pts,totalCash,loanRecord=null;
+  if(loanType==='subto'){
+    const sl=p.sellerLoan;
+    if(!sl){toast('No assumable loan on this property','bad');return;}
+    closing=Math.round(offerPrice*.015);             // lighter closing on subject-to
+    principal=sl.balance;
+    const cashToSeller=Math.max(0,offerPrice-sl.balance);
+    pts=0; down=cashToSeller; totalCash=cashToSeller+closing;
+    loanRecord={id:++G.lidSeq,propId:p.id,type:'subto',
+      name:`Subject-To — ${p.addr.split(' ').slice(0,2).join(' ')}`,
+      rate:sl.rate,termMonths:sl.termMonths,balance:principal,payment:sl.payment,
+      points:0,intOnly:false,monthsPaid:0,status:'active',subTo:true};
+  } else {
+    const lo=LOANS[loanType];
+    const rate=Math.max(.02,lo.rate-(loanType==='cash'?0:brokerDisc));
+    down=Math.round(offerPrice*lo.down);
+    principal=offerPrice-down;
+    closing=Math.round(offerPrice*.025);
+    pts=Math.round(principal*lo.points);
+    totalCash=down+closing+pts;
+    if(loanType!=='cash'){
+      const pmt=lo.intOnly?ioPmt(principal,rate):mpmt(principal,rate,lo.term);
+      loanRecord={id:++G.lidSeq,propId:p.id,type:loanType,
+        name:`${lo.name} — ${p.addr.split(' ').slice(0,2).join(' ')}`,
+        rate,termMonths:lo.term,balance:principal,payment:pmt,
+        points:pts,intOnly:lo.intOnly,monthsPaid:0,status:'active'};
+    }
   }
+  const rehabNeed=p.cond<5?p.rehabEst:0;
+  // ── Money-partner: operator funds nothing, collects a fee, keeps a share ──
+  if(usePartner){
+    const funded=totalCash+rehabNeed;
+    const equityPct=.70;                              // partner owns 70%, you keep 30% + fee
+    const fee=Math.round(offerPrice*.02);
+    const pname=`${pick(['Atlas','Beacon','Cedar','Delta','Evergreen','Fortis'])} Capital`;
+    p.partner={name:pname,equityPct,funded};
+    G.partners.push({propId:p.id,addr:p.addr,name:pname,equityPct,funded});
+    G.cash+=fee;
+    ledger(`Acquisition fee: ${p.addr}`,fee);
+    evFeed(`Partnered on ${p.addr} — ${pname} funded ${fmt$(funded,true)} (${Math.round(equityPct*100)}%); you earned a ${fmt$(fee,true)} fee`,'good');
+    p.cashInvested=0;
+  } else {
+    if(G.cash<totalCash){toast('Not enough cash!','bad');return;}
+    G.cash-=totalCash;
+    p.cashInvested=totalCash;
+    ledger(`Purchased: ${p.addr}`, -totalCash);
+  }
+  // Execute
+  p.status='vacant';
+  p.purchasePrice=offerPrice;
+  p.marketVal=offerPrice;
+  if(loanRecord) G.loans.push(loanRecord);
+  if(loanRecord&&loanType!=='subto'&&G.team.some(t=>t.type==='broker')) G.brokerRel=Math.min(10,(G.brokerRel||0)+1);
   // Move from market to portfolio
   G.market=G.market.filter(x=>x.id!==propId);
   G.portfolio.push(p);
   if(G.yearStats) G.yearStats.acquired=(G.yearStats.acquired||0)+1;
   G.lifetimeAcquired=(G.lifetimeAcquired||0)+1;
-  ledger(`Purchased: ${p.addr}`, -totalCash);
-  evFeed(`Bought ${p.addr} for ${fmt$(offerPrice,1)} (${loanType.toUpperCase()}) — cash out: ${fmt$(totalCash,1)}`,'good');
-  if(G.portfolio.length===1) advise('First Purchase!',`Welcome to the portfolio! Now decide your strategy: <b>Rehab & Flip</b> for a quick profit, or <b>Rehab, Rent & Hold</b> for monthly cash flow. The BRRRR strategy lets you pull your capital back out via refinance after the rehab — then repeat.`);
-  // Auto-start rehab if not turnkey and player has cash
+  evFeed(`Bought ${p.addr} for ${fmt$(offerPrice,1)} (${loanType==='subto'?'SUBJECT-TO':loanType.toUpperCase()})${usePartner?' · partner-funded':''}`,'good');
+  // Auto-start rehab if not turnkey
   if(p.cond<5){
-    if(G.cash>=p.rehabEst){
+    if(usePartner){ // partner already funded the rehab budget
+      p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=p.rehabEst;
+      evFeed(`Rehab started at ${p.addr} — ${p.rehabWeeksLeft} weeks (partner-funded ${fmt$(p.rehabEst,1)})`,'info');
+    } else if(G.cash>=p.rehabEst){
       p.status='rehab';
       p.rehabWeeksLeft=REHAB_WKS[p.cond];
       p.rehabWksTotal=REHAB_WKS[p.cond];
@@ -2839,12 +3307,12 @@ function openPropAnalytics(id){
   const maint=(p.sqft||1000)*.083;
   const hoa=p.hoa||0;
   const noiVal=egi-mgmt-tax-ins-maint-hoa;
-  const debtSvc=l?l.payment:0;
+  const debtSvc=propPayment(p);
   const ncf=noiVal-debtSvc;
   const coc=p.cashInvested>0?(ncf*12)/p.cashInvested:0;
   const capR=p.marketVal>0?(noiVal*12)/p.marketVal:0;
   const eq=equity(p);
-  const ltv=l&&p.marketVal?l.balance/p.marketVal:0;
+  const ltv=l&&p.marketVal?propDebt(p)/p.marketVal:0;
   const unrealizedGain=p.marketVal-p.purchasePrice-(p.rehabCost||0);
   const totalReturn=p.cashInvested>0?((ncf*12)+(p.marketVal*HOODS[p.hood].appreci))/p.cashInvested:0;
 
@@ -2862,7 +3330,7 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Vacancy (${fmtPct(vacPct)})</span><span class="fv neg">−${fmt$(vacancy,true)}</span></div>
       <div class="frow tot"><span class="fl">Effective Gross Income</span><span class="fv">${fmt$(egi)}</span></div>
       ${mgmt?`<div class="frow"><span class="fl">Property Mgmt (${fmtPct(p.mgmtPct)})</span><span class="fv neg">−${fmt$(mgmt,true)}</span></div>`:''}
-      <div class="frow"><span class="fl">Property Tax (1.1%/yr)</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
+      <div class="frow"><span class="fl">Property Tax${p.taxAppeal&&p.taxAppeal<1?` <span class="lc-chip lc-ok">−${fmtPct(1-p.taxAppeal)} appealed</span>`:''}</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
       <div class="frow"><span class="fl">Insurance</span><span class="fv neg">−${fmt$(ins,true)}</span></div>
       <div class="frow"><span class="fl">Maintenance</span><span class="fv neg">−${fmt$(maint,true)}</span></div>
       ${hoa?`<div class="frow"><span class="fl">HOA</span><span class="fv neg">−${fmt$(hoa,true)}</span></div>`:''}
@@ -2887,7 +3355,10 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Unrealized Gain</span><span class="fv ${unrealizedGain>=0?'pos':'neg'}">${fmt$(unrealizedGain)}</span></div>
       <div class="frow tot"><span class="fl">Est. Annual Total Return</span><span class="fv ${totalReturn>=.12?'pos':totalReturn>=.06?'warn':'neg'}">${fmtPct(totalReturn)} <span style="font-size:10px;font-weight:400;color:var(--txt-dim)">(CF + appreciation)</span></span></div>
     </div>
-    <button class="mbtn" onclick="closeModal()">Close</button>`;
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="mbtn warn" ${p.appealYear===G.year?'disabled':''} onclick="fileAppeal(${id});closeModal();openPropAnalytics(${id})">${p.appealYear===G.year?'Appealed this year':'Appeal Tax Assessment'}</button>
+      <button class="mbtn" onclick="closeModal()">Close</button>
+    </div>`;
   document.getElementById('modalOv').classList.remove('hide');
 }
 function startRehab(id){
@@ -2898,6 +3369,89 @@ function startRehab(id){
   ledger(`Rehab started: ${p.addr}`,-p.rehabEst);
   evFeed(`Rehab started at ${p.addr} — ${p.rehabWeeksLeft} wks, ${fmt$(p.rehabEst,1)}`,'info');
   toast('Rehab started!','info');renderAll();
+}
+
+// ── VALUE-ADD (CapEx) ──────────────────────────────
+// Projects that cost cash + weeks and raise rent AND ARV (forced equity).
+// Run in parallel with the property's status; Contractors speed them up.
+const VALUE_ADD={
+  kitchen: {label:'Kitchen / Cosmetic Force',icon:'🍳',weeks:3,arvMult:1.4,rentPct:.07,addSqft:0,  addUnit:0,
+    cost:p=>Math.round((p.sqft*10+9000)/500)*500, desc:'Premium kitchen + cosmetic refresh that forces higher rent and value fast.'},
+  bedbath: {label:'Add Bed / Bath',icon:'🛁',weeks:5,arvMult:1.5,rentPct:.10,addSqft:120,addUnit:0,
+    cost:p=>Math.round((p.sqft*8+16000)/500)*500, desc:'Reconfigure to add a bedroom or bath — strong rent and ARV lift.'},
+  basement:{label:'Finish Basement / Attic',icon:'🏗️',weeks:7,arvMult:1.4,rentPct:.13,addSqft:400,addUnit:0,
+    cost:p=>Math.round((p.sqft*18+14000)/500)*500, desc:'Convert unfinished space into livable square footage.'},
+  adu:     {label:'Build ADU (extra unit)',icon:'🏘️',weeks:12,arvMult:1.6,rentPct:0,addSqft:500,addUnit:1,
+    cost:p=>Math.round((65000+p.sqft*6)/1000)*1000, desc:'Add an accessory dwelling unit — a whole new income stream.'},
+};
+function vaCostOf(p,key){return VALUE_ADD[key].cost(p);}
+function openValueAddModal(id){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  if(p.status==='rehab'||p.vaWeeksLeft>0){toast('A project is already running here','warn');return;}
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>Value-Add: ${p.addr}</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Capital improvements raise both rent and ARV (forced equity). Cost + timeline below; Contractors speed up the work. Cash is paid up front.</div></div>
+    ${Object.entries(VALUE_ADD).map(([k,d])=>{
+      const cost=vaCostOf(p,k);
+      const arvAdd=Math.round(cost*d.arvMult);
+      const rentAdd=k==='adu'?Math.round(p.monthlyRent/Math.max(1,p.units)):Math.round(p.monthlyRent*d.rentPct/25)*25;
+      const afford=G.cash>=cost;
+      return`<div class="type-card" style="margin:0 0 8px">
+        <div class="tt"><span>${d.icon}</span>${d.label}</div>
+        <div class="td">${d.desc}</div>
+        <div class="tm"><span>Cost ${fmt$(cost,true)}</span><span>${d.weeks}wk</span><span class="pos">+${fmt$(rentAdd,true)}/mo</span><span class="pos">+${fmt$(arvAdd,true)} value</span>${d.addUnit?'<span class="info">+1 unit</span>':''}</div>
+        <button class="mbtn sm green" style="margin-top:8px" ${afford?'':'disabled'} onclick="startValueAdd(${id},'${k}')">${afford?'Start →':'Need '+fmt$(cost-G.cash,true)}</button>
+      </div>`;
+    }).join('')}
+    <button class="mbtn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function startValueAdd(id,key){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  const d=VALUE_ADD[key];if(!d)return;
+  const cost=vaCostOf(p,key);
+  if(G.cash<cost){toast('Not enough cash','bad');return;}
+  G.cash-=cost;
+  p.vaProject=key;p.vaCost=cost;p.vaWeeksLeft=d.weeks;p.vaWksTotal=d.weeks;
+  ledger(`Value-add (${d.label}): ${p.addr}`,-cost);
+  evFeed(`Value-add started at ${p.addr} — ${d.label}, ${d.weeks}wk, ${fmt$(cost,1)}`,'info');
+  toast('Value-add started!','info');closeModal();renderAll();
+}
+// ── PROPERTY-TAX APPEAL ────────────────────────────
+// Pay a fee for a chance to lower a property's assessed value (and tax).
+// One appeal per property per year; a Bookkeeper improves the odds.
+function fileAppeal(id,silent){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return false;
+  if(p.appealYear===G.year){ if(!silent)toast('Already appealed this year','warn'); return false; }
+  const fee=Math.max(400,Math.round(p.marketVal*.0008/100)*100);
+  if(G.cash<fee){ if(!silent)toast('Not enough cash for the appeal fee','bad'); return false; }
+  G.cash-=fee; ledger(`Tax appeal fee: ${p.addr}`,-fee);
+  p.appealYear=G.year;
+  const hasBook=G.team.some(t=>t.type==='bookkeeper');
+  if(Math.random()<(hasBook?.78:.55)){
+    const reduction=rnd(.08,.20);
+    p.taxAppeal=Math.max(.6,(p.taxAppeal||1)*(1-reduction));
+    evFeed(`✅ Tax appeal won at ${p.addr} — assessment cut ${fmtPct(reduction)} (lower property tax)`,'good');
+    if(!silent){toast('Appeal won — taxes reduced!','good');renderAll();}
+    return true;
+  }
+  evFeed(`Tax appeal denied at ${p.addr} — ${fmt$(fee,true)} fee lost`,'warn');
+  if(!silent){toast('Appeal denied','warn');renderAll();}
+  return false;
+}
+function completeValueAdd(p){
+  const d=VALUE_ADD[p.vaProject];if(!d){p.vaWeeksLeft=0;return;}
+  const arvAdd=Math.round((p.vaCost||0)*d.arvMult);
+  const rentAdd=p.vaProject==='adu'?Math.round(p.monthlyRent/Math.max(1,p.units)):Math.round(p.monthlyRent*d.rentPct/25)*25;
+  p.arv+=arvAdd; p.marketVal+=arvAdd;
+  p.monthlyRent+=rentAdd;
+  p.sqft+=d.addSqft; p.units+=d.addUnit;
+  if(p.vaProject==='bedbath') p.beds=(p.beds||2)+1;
+  G.lifetimeRehab=(G.lifetimeRehab||0)+1;
+  evFeed(`✅ Value-add complete at ${p.addr} — ${d.label}: +${fmt$(rentAdd,true)}/mo rent, +${fmt$(arvAdd,true)} value`,'good');
+  p.vaProject=null;p.vaCost=0;p.vaWksTotal=0;
+  checkAchievements();renderAll();
 }
 
 

@@ -736,6 +736,21 @@ const RULE_TYPES = {
     desc:'List a rented property for sale automatically when its equity hits your target.',
     params:[{id:'equityTarget',label:'Equity target ($)',def:75000}],
   },
+  auto_value_add:{
+    icon:'🏗️',label:'Auto Value-Add',
+    desc:'Start the best value-add project on a rented/turnkey property when cash stays above your floor and the projected value gain clears the cost by your ROI multiple.',
+    params:[{id:'floor',label:'Keep reserve ($)',def:40000},{id:'roi',label:'Min value/cost ×',def:1.3}],
+  },
+  auto_rate_refi:{
+    icon:'📉',label:'Auto Rate-Shop Refi',
+    desc:'With a Mortgage Broker on staff, refinance any amortizing loan into a new 30-yr when market rates drop more than your trigger below the loan\'s rate.',
+    params:[{id:'drop',label:'Rate drop trigger (%)',def:1.0}],
+  },
+  auto_tax_appeal:{
+    icon:'⚖️',label:'Auto Tax Appeal',
+    desc:'Automatically file a property-tax assessment appeal each year on properties that have not yet been reduced.',
+    params:[],
+  },
 };
 
 function rentBoom(){
@@ -827,7 +842,7 @@ function mpmt(P,annR,n){ // monthly amortizing payment
 function ioPmt(P,annR){return P*(annR/12);}
 function noi(p){ // monthly NOI
   const r=p.monthlyRent||0,v=r*(p.vacRate||HOODS[p.hood].vacBase);
-  const tax=p.marketVal*.011/12*(G.taxMod||1);   // 1.1% property tax/yr × market event modifier
+  const tax=p.marketVal*.011/12*(G.taxMod||1)*(p.taxAppeal||1);   // 1.1% property tax/yr × market event modifier × appeal reduction
   const ins=(p.sqft||1000)*.042*(G.insuranceMod||1); // ~$0.50/sqft/yr × insurance event modifier
   const maint=(p.sqft||1000)*.083;               // ~$1/sqft/yr maintenance
   return r-v-(r*(p.mgmtPct||0))-tax-ins-maint-(p.hoa||0);
@@ -982,8 +997,7 @@ function tick(){
 
 // ── AUTOMATION ENGINE ──────────────────────────────
 function processAutomation(){
-  if(!G.rules||!G.rules.length)return;
-  G.rules.filter(r=>r.active).forEach(r=>{
+  (G.rules||[]).filter(r=>r.active).forEach(r=>{
     switch(r.type){
       case 'auto_rehab':
         G.portfolio.filter(p=>p.status==='vacant'&&p.cond<5).forEach(p=>{
@@ -1040,8 +1054,38 @@ function processAutomation(){
           }
         });
         break;
+      case 'auto_value_add':{
+        const floor=Number(r.params.floor)||40000;
+        const roiMin=Number(r.params.roi)||1.3;
+        G.portfolio.filter(p=>(p.status==='rented'||(p.status==='vacant'&&p.cond===5))&&!p.vaWeeksLeft).forEach(p=>{
+          // pick the most cost-effective project that clears ROI and the cash floor
+          let best=null;
+          Object.keys(VALUE_ADD).forEach(k=>{
+            const d=VALUE_ADD[k],cost=vaCostOf(p,k),gain=cost*d.arvMult;
+            if(gain/cost>=roiMin&&G.cash-cost>=floor){ if(!best||cost<best.cost) best={k,cost}; }
+          });
+          if(best){ startValueAdd(p.id,best.k); evFeed(`[AUTO] Value-add started at ${p.addr} — ${VALUE_ADD[best.k].label}`,'info'); }
+        });
+        break;}
+      case 'auto_rate_refi':{
+        if(!G.team.some(t=>t.type==='broker')) break; // broker required to rate-shop
+        const trig=(Number(r.params.drop)||1.0)/100;
+        const newRate=LOANS.conv.rate-brokerRateDiscount();
+        G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&l.rate-newRate>=trig).forEach(l=>{
+          const p=G.portfolio.find(x=>x.id===l.propId);if(!p)return;
+          const bal=l.balance;l.status='paid';
+          const pmt=mpmt(bal,newRate,360);
+          G.loans.push({id:++G.lidSeq,propId:p.id,type:'conv',name:`Rate Refi — ${p.addr.split(' ').slice(0,2).join(' ')}`,rate:newRate,termMonths:360,balance:bal,payment:pmt,points:0,intOnly:false,monthsPaid:0,status:'active'});
+          G.lifetimeRefi=(G.lifetimeRefi||0)+1;
+          evFeed(`[AUTO] Rate-shop refi on ${p.addr} — ${fmtPct(l.rate)} → ${fmtPct(newRate)}`,'good');
+        });
+        break;}
+      case 'auto_tax_appeal':
+        G.portfolio.filter(p=>p.appealYear!==G.year&&(p.taxAppeal||1)>=1).forEach(p=>{ fileAppeal(p.id,true); });
+        break;
     }
   });
+  runRegionalOps(); // Regional Managers operate their assigned hoods
   // 1031 exchange countdown
   if(G.pending1031){
     G.pending1031.weeksLeft=(G.pending1031.weeksLeft||8)-1;
@@ -1065,11 +1109,12 @@ function monthlyTick(){
 
   G.portfolio.forEach(p=>{
     if(p.status==='rented'){
+      const managed=hasPM||regionalActive(p.hood); // PM or Regional Manager auto-fills
       // ── Vacancy event ──
       const vacHit=Math.random()<(p.vacRate||HOODS[p.hood].vacBase);
       if(vacHit){
-        if(hasPM){
-          evFeed(`Short vacancy at ${p.addr} — PM filling unit.`,'warn');
+        if(managed){
+          evFeed(`Short vacancy at ${p.addr} — ${hasPM?'PM':'Regional Mgr'} filling unit.`,'warn');
         } else {
           evFeed(`Vacancy at ${p.addr} — lost ${fmt$(p.monthlyRent,true)} this month.`,'warn');
           p.status='vacant';p.tenant=null;
@@ -1115,7 +1160,7 @@ function monthlyTick(){
             p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
             evFeed(`Tenant declined renewal at ${p.addr} — unit vacant`,'warn');
           }
-        } else if(ev<lateProb+.04+moveoutProb&&!hasPM){
+        } else if(ev<lateProb+.04+moveoutProb&&!managed){
           // Move-out notice (less likely with PM)
           p.status='vacant';p.tenant=null;p.tenantTier=null;p.latePayProb=null;
           evFeed(`Move-out notice at ${p.addr} — tenant leaving`,'warn');
@@ -1228,6 +1273,20 @@ function yearlyTick(){
     p.monthlyRent+=bump;
   });
   evFeed(`Year ${G.year-1} closed — portfolio appreciated and rents grew.`,'good');
+  // Depreciation tax shield — annual deduction (a bookkeeper captures more)
+  const incTaxRate=G.team.some(t=>t.type==='bookkeeper')?.16:.12;
+  let depShield=0;
+  G.portfolio.forEach(p=>{
+    if(p.purchasePrice>0){
+      const basis=(p.purchasePrice+(p.rehabCost||0))*.8; // ~80% improvements, 20% land
+      depShield+=(basis/27.5)*incTaxRate*myShare(p);     // 27.5-yr residential schedule
+    }
+  });
+  depShield=Math.round(depShield);
+  if(depShield>0){
+    G.cash+=depShield; ledger('Depreciation tax shield',depShield);
+    evFeed(`Depreciation shield — +${fmt$(depShield,true)} tax savings for the year`,'good');
+  }
   // Slowly decay hood trends back toward 0
   if(G.hoodTrends) Object.keys(G.hoodTrends).forEach(k=>{
     if(G.hoodTrends[k]>0) G.hoodTrends[k]--;
@@ -1367,11 +1426,18 @@ function renderTeamRoster(){
     G.team.forEach(t=>{
       const def=TEAM_TYPES[t.type];
       const cost=(def?.weeklyCost||0)*4;
+      const myHood=t.type==='regional'?Object.keys(G.regions||{}).find(h=>G.regions[h]===t.id):null;
+      const regSel=t.type==='regional'?`<div class="rdetail" style="margin-top:4px;display:flex;align-items:center;gap:5px">Manages:
+        <select onchange="assignRegion(${t.id},this.value)" style="background:var(--surface2);border:1px solid var(--line);color:var(--txt);font-size:11px;padding:2px 5px;border-radius:2px">
+          <option value="" ${!myHood?'selected':''}>— Unassigned —</option>
+          ${Object.entries(HOODS).map(([hk,h])=>`<option value="${hk}" ${myHood===hk?'selected':''} ${regionalActive(hk)&&myHood!==hk?'disabled':''}>${h.name}${regionalActive(hk)&&myHood!==hk?' (taken)':''}</option>`).join('')}
+        </select></div>`:'';
       html.push(`<div class="row" style="cursor:default">
         <div>
           <div class="rname">${def?.icon||''} ${t.name}</div>
           <div class="rdetail">${def?.role||t.type} · Hired ${t.hired}</div>
           <div class="rdetail" style="margin-top:3px;color:var(--pos)">${def?.effect||''}</div>
+          ${regSel}
         </div>
         <div class="rright">
           <div class="rprice">${cost?fmt$(cost,true)+'/mo':'Free'}</div>
@@ -1409,7 +1475,19 @@ function hirePerson(type){
   const firstNames=['Alex','Sam','Jordan','Casey','Morgan','Taylor','Jamie','Riley'];
   const lastNames=['Chen','Rivera','Patel','Johnson','Kim','Davis','Martinez','Wilson'];
   const name=`${pick(firstNames)} ${pick(lastNames)}`;
-  G.team.push({id:++teamSeq,type,name,hired:dStr()});
+  const tid=++teamSeq;
+  G.team.push({id:tid,type,name,hired:dStr()});
+  // Auto-assign a new Regional Manager to the neighborhood with the most
+  // unmanaged owned properties (they can be reassigned in the roster).
+  if(type==='regional'){
+    G.regions=G.regions||{};
+    const counts={};
+    G.portfolio.forEach(p=>{ if(!regionalActive(p.hood)) counts[p.hood]=(counts[p.hood]||0)+1; });
+    let pickHk=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+    if(!pickHk) pickHk=['A','B','C','D'].find(h=>!regionalActive(h))||'A';
+    G.regions[pickHk]=tid;
+    evFeed(`${name} now manages ${HOODS[pickHk].name} operations`,'info');
+  }
   evFeed(`Hired ${def.role}: ${name}`,'good');
   toast(`${name} is on the team!`,'good');
   renderTeam();renderAll();
@@ -1417,9 +1495,36 @@ function hirePerson(type){
 function firePerson(id){
   const t=G.team.find(x=>x.id===id);if(!t)return;
   G.team=G.team.filter(x=>x.id!==id);
+  if(G.regions){ Object.keys(G.regions).forEach(h=>{ if(G.regions[h]===id) delete G.regions[h]; }); }
   evFeed(`${TEAM_TYPES[t.type]?.role||'Team member'} ${t.name} let go.`,'warn');
   toast('Team member removed','warn');
   renderTeam();renderAll();
+}
+// Regional Manager helpers
+function regionalActive(hk){const id=(G.regions||{})[hk];return id&&G.team.some(t=>t.id===id&&t.type==='regional');}
+function assignRegion(teamId,hk){
+  G.regions=G.regions||{};
+  Object.keys(G.regions).forEach(h=>{ if(G.regions[h]===teamId) delete G.regions[h]; }); // unassign elsewhere
+  if(hk) G.regions[hk]=teamId;
+  renderTeam();renderAll();
+}
+// Auto-operate every hood that has an assigned Regional Manager.
+function runRegionalOps(){
+  if(!G.regions) return;
+  Object.keys(G.regions).forEach(hk=>{
+    if(!regionalActive(hk)) return;
+    G.portfolio.filter(p=>p.hood===hk).forEach(p=>{
+      if(p.status==='vacant'&&p.cond<5&&!p.vaWeeksLeft&&G.cash>=p.rehabEst+5000){
+        G.cash-=p.rehabEst;p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=p.rehabEst;
+        ledger(`[RM] Rehab: ${p.addr}`,-p.rehabEst);
+        evFeed(`[RM ${HOODS[hk].name}] Rehab started at ${p.addr}`,'info');
+      } else if(p.status==='vacant'&&p.cond===5){
+        p.status='rented';p.tenant=`${pick(FNAMES)} ${pick(LNAMES)}`;
+        p.tenantTier=p.tenantTier||'B';p.leaseTermMonths=12;p.leaseExpiry=calcLeaseExpiry(12);
+        evFeed(`[RM ${HOODS[hk].name}] Tenant placed at ${p.addr} — ${fmt$(p.monthlyRent,true)}/mo`,'good');
+      }
+    });
+  });
 }
 
 // ── EVENTS / LEDGER ────────────────────────────────
@@ -3225,7 +3330,7 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Vacancy (${fmtPct(vacPct)})</span><span class="fv neg">−${fmt$(vacancy,true)}</span></div>
       <div class="frow tot"><span class="fl">Effective Gross Income</span><span class="fv">${fmt$(egi)}</span></div>
       ${mgmt?`<div class="frow"><span class="fl">Property Mgmt (${fmtPct(p.mgmtPct)})</span><span class="fv neg">−${fmt$(mgmt,true)}</span></div>`:''}
-      <div class="frow"><span class="fl">Property Tax (1.1%/yr)</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
+      <div class="frow"><span class="fl">Property Tax${p.taxAppeal&&p.taxAppeal<1?` <span class="lc-chip lc-ok">−${fmtPct(1-p.taxAppeal)} appealed</span>`:''}</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
       <div class="frow"><span class="fl">Insurance</span><span class="fv neg">−${fmt$(ins,true)}</span></div>
       <div class="frow"><span class="fl">Maintenance</span><span class="fv neg">−${fmt$(maint,true)}</span></div>
       ${hoa?`<div class="frow"><span class="fl">HOA</span><span class="fv neg">−${fmt$(hoa,true)}</span></div>`:''}
@@ -3250,7 +3355,10 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Unrealized Gain</span><span class="fv ${unrealizedGain>=0?'pos':'neg'}">${fmt$(unrealizedGain)}</span></div>
       <div class="frow tot"><span class="fl">Est. Annual Total Return</span><span class="fv ${totalReturn>=.12?'pos':totalReturn>=.06?'warn':'neg'}">${fmtPct(totalReturn)} <span style="font-size:10px;font-weight:400;color:var(--txt-dim)">(CF + appreciation)</span></span></div>
     </div>
-    <button class="mbtn" onclick="closeModal()">Close</button>`;
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="mbtn warn" ${p.appealYear===G.year?'disabled':''} onclick="fileAppeal(${id});closeModal();openPropAnalytics(${id})">${p.appealYear===G.year?'Appealed this year':'Appeal Tax Assessment'}</button>
+      <button class="mbtn" onclick="closeModal()">Close</button>
+    </div>`;
   document.getElementById('modalOv').classList.remove('hide');
 }
 function startRehab(id){
@@ -3309,6 +3417,28 @@ function startValueAdd(id,key){
   ledger(`Value-add (${d.label}): ${p.addr}`,-cost);
   evFeed(`Value-add started at ${p.addr} — ${d.label}, ${d.weeks}wk, ${fmt$(cost,1)}`,'info');
   toast('Value-add started!','info');closeModal();renderAll();
+}
+// ── PROPERTY-TAX APPEAL ────────────────────────────
+// Pay a fee for a chance to lower a property's assessed value (and tax).
+// One appeal per property per year; a Bookkeeper improves the odds.
+function fileAppeal(id,silent){
+  const p=G.portfolio.find(x=>x.id===id);if(!p)return false;
+  if(p.appealYear===G.year){ if(!silent)toast('Already appealed this year','warn'); return false; }
+  const fee=Math.max(400,Math.round(p.marketVal*.0008/100)*100);
+  if(G.cash<fee){ if(!silent)toast('Not enough cash for the appeal fee','bad'); return false; }
+  G.cash-=fee; ledger(`Tax appeal fee: ${p.addr}`,-fee);
+  p.appealYear=G.year;
+  const hasBook=G.team.some(t=>t.type==='bookkeeper');
+  if(Math.random()<(hasBook?.78:.55)){
+    const reduction=rnd(.08,.20);
+    p.taxAppeal=Math.max(.6,(p.taxAppeal||1)*(1-reduction));
+    evFeed(`✅ Tax appeal won at ${p.addr} — assessment cut ${fmtPct(reduction)} (lower property tax)`,'good');
+    if(!silent){toast('Appeal won — taxes reduced!','good');renderAll();}
+    return true;
+  }
+  evFeed(`Tax appeal denied at ${p.addr} — ${fmt$(fee,true)} fee lost`,'warn');
+  if(!silent){toast('Appeal denied','warn');renderAll();}
+  return false;
 }
 function completeValueAdd(p){
   const d=VALUE_ADD[p.vaProject];if(!d){p.vaWeeksLeft=0;return;}

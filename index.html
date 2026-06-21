@@ -839,15 +839,27 @@ function grm(price,mRent){return mRent>0?price/(mRent*12):0;}
 // cash flow — your "promote" comes from controlling the deal with little
 // or none of your own capital.
 function myShare(p){return p&&p.partner?(1-(p.partner.equityPct||0)):1;}
-function equity(p){const l=activeLoan(p);return (p.marketVal-(l?l.balance:0))*myShare(p);}
-function activeLoan(p){return G.loans.find(l=>l.propId===p.id&&l.status==='active');}
+// A loan covers a property either directly (propId) or as part of a
+// multi-property blanket loan (propIds[]).
+function loanCovers(l,pid){return l.blanket?(l.propIds||[]).includes(pid):l.propId===pid;}
+function activeLoan(p){return G.loans.find(l=>l.status==='active'&&loanCovers(l,p.id));}
+// Per-property debt/payment — a blanket loan's balance & payment are split
+// across its covered properties in proportion to market value.
+function blanketShare(l,p){
+  const props=G.portfolio.filter(x=>(l.propIds||[]).includes(x.id));
+  const tot=props.reduce((s,x)=>s+(x.marketVal||0),0)||1;
+  return (p.marketVal||0)/tot;
+}
+function propDebt(p){const l=activeLoan(p);if(!l)return 0;return l.blanket?l.balance*blanketShare(l,p):l.balance;}
+function propPayment(p){const l=activeLoan(p);if(!l)return 0;return l.blanket?l.payment*blanketShare(l,p):l.payment;}
+function equity(p){return (p.marketVal-propDebt(p))*myShare(p);}
 function totalEquity(){return G.portfolio.reduce((s,p)=>s+equity(p),0);}
 function totalDebt(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.balance,0);}
 function totalDSvc(){return G.loans.filter(l=>l.status==='active').reduce((s,l)=>s+l.payment,0);}
 function netWorth(){return G.cash+totalEquity();}
 function portCF(){
   return G.portfolio.filter(p=>p.status==='rented').reduce((s,p)=>{
-    const l=activeLoan(p);return s+(noi(p)-(l?l.payment:0))*myShare(p);
+    return s+(noi(p)-propPayment(p))*myShare(p);
   },0);
 }
 function dscr(p,pmt){return pmt>0?noi(p)/pmt:999;}
@@ -2299,13 +2311,61 @@ function showYearReport(yr){
 function applyLOC(){
   const nw=netWorth();
   if(nw<25000){toast('Need $25k+ net worth to qualify','bad');return;}
-  G.loc.limit=Math.round(Math.min(500000,nw*.20)/1000)*1000;
-  G.loc.rate=G.primeRate+.025;
+  // Mortgage Broker unlocks a larger, cheaper portfolio credit facility
+  const hasBroker=G.team.some(t=>t.type==='broker');
+  if(hasBroker){
+    G.loc.limit=Math.round(Math.min(2000000,Math.max(totalEquity(),nw)*.55)/1000)*1000;
+    G.loc.rate=G.primeRate+.012;
+    G.loc.facility=true;
+  } else {
+    G.loc.limit=Math.round(Math.min(500000,nw*.20)/1000)*1000;
+    G.loc.rate=G.primeRate+.025;
+    G.loc.facility=false;
+  }
   G.loc.status='active';
   G.loc.balance=0;
-  evFeed(`Credit line approved — ${fmt$(G.loc.limit,true)} at ${fmtPct(G.loc.rate)}`,'good');
-  toast(`LOC approved: ${fmt$(G.loc.limit,true)}`,'good');
+  evFeed(`${hasBroker?'Portfolio credit facility':'Credit line'} approved — ${fmt$(G.loc.limit,true)} at ${fmtPct(G.loc.rate)}`,'good');
+  toast(`Approved: ${fmt$(G.loc.limit,true)}`,'good');
   renderFin();
+}
+// ── BLANKET LOAN (consolidate several loans into one) ──
+function openBlanketModal(){
+  const eligible=G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&(l.type==='conv'||l.type==='dscr'||l.subTo));
+  if(eligible.length<2){toast('Need 2+ amortizing loans to consolidate','bad');closeModal();return;}
+  const rows=eligible.map(l=>{
+    const p=G.portfolio.find(x=>x.id===l.propId);
+    return`<label class="lender-row" style="cursor:pointer">
+      <div class="lender-main"><div class="lender-name"><input type="checkbox" class="blk-pick" value="${l.id}" checked style="margin-right:7px">${p?.addr||l.name}</div>
+      <div class="lender-sub">${fmt$(l.balance,true)} @ ${fmtPct(l.rate)} · ${fmt$(l.payment,true)}/mo</div></div>
+    </label>`;
+  }).join('');
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>🏦 Blanket Loan</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Combine selected loans into a single blanket loan at a balance-weighted blended rate (30-yr). One payment, less paperwork. Balance is allocated across properties by value.</div></div>
+    <div class="lender-list">${rows}</div>
+    <div style="display:flex;gap:7px;margin-top:12px">
+      <button class="mbtn green" onclick="consolidateLoans()">Consolidate →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function consolidateLoans(){
+  const ids=[...document.querySelectorAll('.blk-pick:checked')].map(c=>+c.value);
+  if(ids.length<2){toast('Pick at least 2 loans','bad');return;}
+  const loans=G.loans.filter(l=>ids.includes(l.id)&&l.status==='active');
+  const totBal=loans.reduce((s,l)=>s+l.balance,0);
+  const blended=loans.reduce((s,l)=>s+l.rate*l.balance,0)/totBal-brokerRateDiscount()*.5;
+  const rate=Math.max(.02,blended);
+  const propIds=loans.map(l=>l.propId).filter(Boolean);
+  const pmt=mpmt(totBal,rate,360);
+  loans.forEach(l=>l.status='paid');
+  G.loans.push({id:++G.lidSeq,blanket:true,propIds,type:'conv',
+    name:`Blanket Loan (${propIds.length})`,rate,termMonths:360,balance:totBal,payment:pmt,
+    points:0,intOnly:false,monthsPaid:0,status:'active'});
+  evFeed(`Consolidated ${loans.length} loans into a ${fmt$(totBal,true)} blanket at ${fmtPct(rate)} — ${fmt$(pmt,true)}/mo`,'good');
+  toast('Blanket loan created','good');
+  closeModal();renderAll();
 }
 
 function openLOCModal(){
@@ -2556,7 +2616,7 @@ function renderPort(){
   note.textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · Net Worth ${fmt$(netWorth())} · Monthly CF ${fmtCF(portCF())}`;
   const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info'};
   el.innerHTML=G.portfolio.map(p=>{
-    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?noi(p)-(l?l.payment:0):0;
+    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(noi(p)-propPayment(p))*myShare(p):0;
     const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
     return`<div class="own-card">
       <div class="own-head">
@@ -2569,7 +2629,7 @@ function renderPort(){
       ${p.status==='rehab'?`<div class="prog-wrap"><div class="prog-lbl">${p.rehabWeeksLeft} weeks left in rehab</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
       <div class="own-stats">
         <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
-        <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(l.balance,true):'No loan'}</div></div>
+        <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?(l.blanket?'Blanket ':'Debt ')+fmt$(propDebt(p),true):'No loan'}</div></div>
         <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${fmtCF(cf)}</div><div class="od">${p.status==='rented'?fmt$(p.monthlyRent,true)+' rent':'Not rented'}</div></div>
       </div>
       <div class="own-acts">
@@ -2594,13 +2654,23 @@ function renderFin(){
   const ll=document.getElementById('loanList');
   if(!active.length){ll.innerHTML='<div class="subnote" style="padding:20px;text-align:center">No active loans.</div>';}
   else{ll.innerHTML=active.map(l=>{
-    const p=G.portfolio.find(x=>x.id===l.propId);
-    const ltv=p&&p.marketVal?l.balance/p.marketVal:0;
+    let propLabel,ltv;
+    if(l.blanket){
+      const props=G.portfolio.filter(x=>(l.propIds||[]).includes(x.id));
+      const totVal=props.reduce((s,x)=>s+(x.marketVal||0),0);
+      propLabel=`Blanket · ${props.length} propert${props.length===1?'y':'ies'}`;
+      ltv=totVal?l.balance/totVal:0;
+    } else {
+      const p=G.portfolio.find(x=>x.id===l.propId);
+      propLabel=p?.addr||(l.subTo?'Subject-To':'Unknown');
+      ltv=p&&p.marketVal?l.balance/p.marketVal:0;
+    }
     const rem=l.termMonths-(l.monthsPaid||0);
-    return`<div class="loan-card ${l.type}">
+    const badgeType=l.blanket?'Blanket':l.subTo?'SUB-TO':l.type.toUpperCase();
+    return`<div class="loan-card ${l.blanket?'conv':l.type}">
       <div class="loan-head">
-        <div><div class="loan-name">${l.name}</div><div class="loan-prop">${p?.addr||'Unknown'}</div></div>
-        <span class="badge ${l.type==='hml'?'neg':l.type==='conv'?'pos':l.type==='dscr'?'info':'warn'}">${l.type.toUpperCase()}</span>
+        <div><div class="loan-name">${l.name}</div><div class="loan-prop">${propLabel}</div></div>
+        <span class="badge ${l.blanket?'info':l.type==='hml'?'neg':l.type==='conv'?'pos':l.type==='dscr'?'info':'warn'}">${badgeType}</span>
       </div>
       <div class="loan-nums">
         <div class="lcell"><div class="ll">Balance</div><div class="lv neg">${fmt$(l.balance,true)}</div></div>
@@ -2610,6 +2680,14 @@ function renderFin(){
       </div>
     </div>`;
   }).join('');
+  }
+  // Blanket-loan consolidation (Mortgage Broker)
+  const blanketEligible=G.team.some(t=>t.type==='broker')&&G.loans.filter(l=>l.status==='active'&&!l.intOnly&&!l.blanket&&(l.type==='conv'||l.type==='dscr'||l.subTo)).length>=2;
+  if(blanketEligible){
+    ll.innerHTML+=`<div style="margin:8px 12px 0;padding:10px 12px;background:var(--surface);border:1px solid var(--info);border-radius:2px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:11.5px;font-weight:700">🏦 Consolidate into a Blanket Loan</div><div style="font-size:10px;color:var(--txt-dim);margin-top:2px">Roll multiple loans into one at a blended rate</div></div>
+      <button class="mbtn sm info" onclick="openBlanketModal()">Combine →</button>
+    </div>`;
   }
   renderLOCSection();
   renderNotesSection();
@@ -3118,12 +3196,12 @@ function openPropAnalytics(id){
   const maint=(p.sqft||1000)*.083;
   const hoa=p.hoa||0;
   const noiVal=egi-mgmt-tax-ins-maint-hoa;
-  const debtSvc=l?l.payment:0;
+  const debtSvc=propPayment(p);
   const ncf=noiVal-debtSvc;
   const coc=p.cashInvested>0?(ncf*12)/p.cashInvested:0;
   const capR=p.marketVal>0?(noiVal*12)/p.marketVal:0;
   const eq=equity(p);
-  const ltv=l&&p.marketVal?l.balance/p.marketVal:0;
+  const ltv=l&&p.marketVal?propDebt(p)/p.marketVal:0;
   const unrealizedGain=p.marketVal-p.purchasePrice-(p.rehabCost||0);
   const totalReturn=p.cashInvested>0?((ncf*12)+(p.marketVal*HOODS[p.hood].appreci))/p.cashInvested:0;
 

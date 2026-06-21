@@ -442,6 +442,51 @@ body{font-size:13.5px}
 .strip .cell,.own-stats .ocell,.loan-nums .lcell,
 .hood-intel .hi-cell{border-right-color:var(--line)}
 .pstat-box{border-color:var(--line)}
+
+/* ══ DESKTOP / PC LAYOUT (≥960px) — mobile untouched below this width ══ */
+@media (min-width:960px){
+  /* gradient backdrop behind a centered framed panel */
+  html[data-theme="dark"]{--desk-bg:radial-gradient(1200px 700px at 50% -8%,#11161d,#0a0c0f 60%) fixed,#070809}
+  html[data-theme="light"]{--desk-bg:radial-gradient(1200px 700px at 50% -8%,#eef1f5,#dfe2e6 60%) fixed,#d4d8dd}
+  html,body{background:var(--desk-bg)}
+  body{max-width:none;margin:0;padding:24px 18px;font-size:13.5px;background-image:none;min-height:100dvh}
+  /* the app becomes a centered, framed panel laid out as [sidebar | content] */
+  #app{display:flex;align-items:flex-start;max-width:1240px;margin:0 auto;min-height:calc(100dvh - 48px);
+       background:var(--bg);border:1px solid var(--line);border-radius:2px;
+       box-shadow:0 10px 50px rgba(0,0,0,.5)}
+  html[data-theme="light"] #app{box-shadow:0 10px 50px rgba(60,70,85,.28)}
+  .appbody{flex:1;min-width:0}
+
+  /* bottom tab bar → left sidebar */
+  .nav{order:-1;position:sticky;top:0;align-self:flex-start;height:100dvh;width:190px;flex:0 0 190px;
+       flex-direction:column;justify-content:flex-start;gap:4px;left:auto;transform:none;max-width:none;
+       padding:12px 9px;border-top:none;border-right:1px solid var(--line);background:var(--surface)}
+  .nav .tab{flex:0 0 auto;text-align:left;display:flex;align-items:center;gap:9px;padding:9px 11px;font-size:12.5px}
+  .nav .tab .ic{display:inline-block;margin:0;font-size:15px}
+  .nav .tab-deals .deals-count{position:static;margin-left:auto}
+
+  /* header sticks to the top of the content column */
+  header{top:0}
+
+  /* fill the width: multi-column content */
+  #p-dash{column-count:2;column-gap:24px;padding:6px 0 10px}
+  #p-dash > div{break-inside:avoid}
+  #p-dash .sec{break-after:avoid;-webkit-column-break-after:avoid}
+  /* card lists that render multiple sibling cards → 2 columns */
+  #portList,#loanList,#notesSection{column-count:2;column-gap:14px;padding:0 6px}
+  .own-card,.loan-card,.note-card,.loc-card,.rule-card{break-inside:avoid;margin-left:6px;margin-right:6px}
+  /* single-card row tables (market, ledger) → rows flow into 2 columns */
+  #propList .card,#ledgerWrap .card{columns:2;column-gap:0}
+  #propList .row,#ledgerWrap .row{break-inside:avoid;border-bottom:1px solid var(--line)}
+  .watch-section{break-inside:avoid;column-span:all}
+
+  /* overlays become centered desktop dialogs instead of bottom sheets */
+  .modal-ov,.drawer-ov{align-items:center}
+  .modal{max-width:760px;max-height:86vh;border-radius:2px}
+  .drawer{max-width:820px;max-height:86vh;border-radius:2px}
+  #advisor{bottom:18px;left:auto;right:24px;transform:none;max-width:360px}
+  .toasts{bottom:22px}
+}
 </style>
 </head>
 <body>
@@ -497,6 +542,7 @@ body{font-size:13.5px}
 
 <!-- ════ APP ════ -->
 <div id="app" style="display:none">
+<div class="appbody">
 <header>
   <div class="hrow1">
     <div class="brand">
@@ -608,6 +654,7 @@ body{font-size:13.5px}
   <div class="sec"><h2>Transaction History</h2><div class="rule"></div></div>
   <div id="ledgerWrap"></div>
 </div>
+</div><!-- /.appbody -->
 
 <!-- BOTTOM NAV -->
 <nav class="nav">

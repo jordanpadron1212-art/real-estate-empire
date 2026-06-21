@@ -2435,7 +2435,7 @@ function openBuyModal(id){
     document.getElementById('buyContent').innerHTML=`
       <div class="fq" style="margin-bottom:10px">
         <div class="fqL">Your Offer</div>
-        <input class="fqI" type="number" id="offerInput" value="${offerAmt}" oninput="offerAmt=parseInt(this.value)||0;document.getElementById('buyContent').innerHTML='';renderBuy()">
+        <input class="fqI" type="number" id="offerInput" value="${offerAmt}" oninput="updateOffer(this.value)">
         <div class="fqS">Asking ${fmt$(p.ask)} · ARV ${fmt$(p.arv)} · Seller: ${p.sellerName}</div>
         ${(()=>{const disc=(p.ask-offerAmt)/p.ask;if(disc<=.02)return`<div class="acc-hint acc-good">✓ At or near asking — seller very likely to accept</div>`;if(disc<=.08)return`<div class="acc-hint acc-warn">~${Math.round((1-Math.min(.8,(.22)*(disc/.10)))*100)}% accept chance — modest discount, worth trying</div>`;return`<div class="acc-hint acc-bad">⚠ ${fmtPct(disc)} below ask — seller may reject in ${G.mktType} market</div>`;})()}
       </div>
@@ -2480,6 +2480,7 @@ function openBuyModal(id){
   };
   window.selLoanType=(k)=>{selLoan=k;render();};
   window.renderBuy=render;
+  window.updateOffer=(v)=>{offerAmt=parseInt(v)||0;render();const inp=document.getElementById('offerInput');if(inp){inp.focus();}};
   document.getElementById('modalBox').innerHTML=`
     <div class="x" onclick="closeModal()">×</div>
     <h3>${p.addr}</h3>

@@ -144,7 +144,7 @@ header{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:
 .ocell{padding:7px 9px;border-right:1px solid var(--line-soft)}
 .ocell:last-child{border-right:none}
 .ocell .ol{font-size:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
-.ocell .ov{font-family:var(--mono);font-weight:600;font-size:13px;margin-top:2px}
+.ocell .ocv{font-family:var(--mono);font-weight:600;font-size:13px;margin-top:2px}
 .ocell .od{font-family:var(--mono);font-size:8.5px;color:var(--txt-dim);margin-top:1px}
 .own-acts{padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap}
 .prog-wrap{padding:4px 12px 8px}
@@ -2326,9 +2326,9 @@ function renderPort(){
       </div>
       ${p.status==='rehab'?`<div class="prog-wrap"><div class="prog-lbl">${p.rehabWeeksLeft} weeks left in rehab</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
       <div class="own-stats">
-        <div class="ocell"><div class="ol">Mkt Value</div><div class="ov">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
-        <div class="ocell"><div class="ol">Equity</div><div class="ov pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(l.balance,true):'No loan'}</div></div>
-        <div class="ocell"><div class="ol">Monthly CF</div><div class="ov ${cf>=0?'pos':'neg'}">${fmtCF(cf)}</div><div class="od">${p.status==='rented'?fmt$(p.monthlyRent,true)+' rent':'Not rented'}</div></div>
+        <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
+        <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(l.balance,true):'No loan'}</div></div>
+        <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${fmtCF(cf)}</div><div class="od">${p.status==='rented'?fmt$(p.monthlyRent,true)+' rent':'Not rented'}</div></div>
       </div>
       <div class="own-acts">
         ${p.status==='vacant'&&p.cond<5?`<button class="mbtn sm warn" onclick="startRehab(${p.id})">Start Rehab ${fmt$(p.rehabEst,true)}</button><button class="mbtn sm" onclick="openListModal(${p.id})">List As-Is</button>`:''}

@@ -761,6 +761,13 @@ function initState(mktType, startCash, playerName){
     careerCF:0,
     bestDealProfit:0,
     highestNW:0,
+    // ── Acquisitions / creative deals / delegation release ──
+    leads:[],            // sourced off-market + REO pipeline (Acquisitions Mgr)
+    partners:[],         // money-partner roster (operator: fee + promote)
+    blanketLoans:[],     // multi-property blanket loans (Mortgage Broker)
+    brokerRel:0,         // lender relationship level → better rates over time
+    regions:{},          // hood -> assigned Regional Manager teamId
+    lidSeqDeal:0,        // id sequence for leads
   };
   updateRates();
   genMarket(8);
@@ -1193,8 +1200,7 @@ function checkMilestones(){
   const nw=netWorth();
   while(G_milestoneIdx<MILESTONES.length&&nw>=MILESTONES[G_milestoneIdx].nw){
     const m=MILESTONES[G_milestoneIdx];
-    evFeed(`🏆 Milestone: ${m.msg}!`,'good');
-    advise(`Milestone: ${m.msg}`,m.tip);
+    evFeed(`🏆 Milestone: ${m.msg}!`,'good'); // sandbox: feed only, no blocking popup
     G_milestoneIdx++;
   }
   checkAchievements();
@@ -1239,6 +1245,13 @@ function loadGame(){
     G.bestDealProfit=G.bestDealProfit||0;
     G.highestNW=G.highestNW||0;
     if(G.achExpanded===undefined) G.achExpanded=false;
+    // Acquisitions / creative deals / delegation release
+    G.leads=G.leads||[];
+    G.partners=G.partners||[];
+    G.blanketLoans=G.blanketLoans||[];
+    G.brokerRel=G.brokerRel||0;
+    G.regions=G.regions||{};
+    G.lidSeqDeal=G.lidSeqDeal||0;
     updateRates();
     return true;
   }catch(e){return false;}
@@ -1875,35 +1888,12 @@ function toggleWatch(propId){
 
 // ── WIN CONDITION ──────────────────────────────────
 function checkWin(){
+  // Sandbox mode: the $5M mark is a celebration milestone, not a blocking win screen.
   if(G.won) return;
   if(netWorth()<5000000) return;
   G.won=true;
-  const sc=portfolioScore();
-  const gradeClr=sc.grade.startsWith('A')?'var(--pos)':sc.grade.startsWith('B')?'var(--info)':sc.grade.startsWith('C')?'var(--warn)':'var(--neg)';
-  const yrs=G.year-2024;
-  const tot=G.portfolio.reduce((s,p)=>s+(p.marketVal||0),0);
-  document.getElementById('modalBox').innerHTML=`
-    <div class="x" onclick="closeModal()">×</div>
-    <div style="text-align:center;padding:18px 0 10px">
-      <div style="font-size:52px;line-height:1">🏆</div>
-      <div style="font-family:var(--mono);font-size:36px;font-weight:700;margin:6px 0 2px;color:#f5c518">$5M REACHED</div>
-      <div style="font-size:11px;color:var(--txt-dim);letter-spacing:1px;text-transform:uppercase">Real Estate Empire Built</div>
-    </div>
-    <div style="text-align:center;margin:10px 0 14px;padding:10px;background:var(--surface2);border-radius:8px;border:1px solid var(--line)">
-      <div style="font-family:var(--mono);font-size:44px;font-weight:700;color:${gradeClr};line-height:1">${sc.grade}</div>
-      <div style="font-size:10px;color:var(--txt-dim);margin-top:4px">Final Portfolio Grade · ${sc.score}/100</div>
-    </div>
-    <div class="card" style="margin:0 0 14px">
-      <div class="frow"><span class="fl">Net Worth</span><span class="fv pos">${fmt$(netWorth())}</span></div>
-      <div class="frow"><span class="fl">Portfolio Value</span><span class="fv">${fmt$(tot)}</span></div>
-      <div class="frow"><span class="fl">Properties Owned</span><span class="fv">${G.portfolio.length}</span></div>
-      <div class="frow"><span class="fl">Years to $5M</span><span class="fv">${yrs} year${yrs===1?'':'s'}</span></div>
-      <div class="frow"><span class="fl">Total Acquired</span><span class="fv">${G.lifetimeAcquired||0} deals</span></div>
-      <div class="frow tot"><span class="fl">Cash on Hand</span><span class="fv pos">${fmt$(G.cash)}</span></div>
-    </div>
-    <button class="mbtn pri wide" onclick="closeModal()" style="margin-bottom:8px">Play On →</button>`;
-  document.getElementById('modalOv').classList.remove('hide');
-  evFeed('🏆 $5M NET WORTH ACHIEVED — Empire built!','good');
+  evFeed('🏆 $5M NET WORTH REACHED — empire built! Keep building.','good');
+  toast('🏆 $5M net worth reached!','good');
   saveGame();
 }
 

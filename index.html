@@ -939,9 +939,11 @@ function tick(){
       p.vaWeeksLeft=Math.max(0,p.vaWeeksLeft-(rehabSpeed>1?rehabSpeed-1:0)-1);
       if(p.vaWeeksLeft<=0) completeValueAdd(p);
     }
-    // Weekly market value drift (small random walk)
+    // Weekly market value — steady appreciation trend (hood + cycle) plus small noise,
+    // so values visibly evolve every week instead of jumping once a year.
     if(p.status!=='market'&&p.marketVal>0){
-      p.marketVal=Math.round(p.marketVal*(1+(Math.random()-.48)*.002)/100)*100;
+      const weeklyAppr=HOODS[p.hood].appreci*(1+(G.mktCycle-50)/100)/52;
+      p.marketVal=Math.round(p.marketVal*(1+weeklyAppr+(Math.random()-.5)*.0006));
     }
   });
 
@@ -993,6 +995,8 @@ function tick(){
   });
 
   renderAll();
+  // keep an open live modal (P&L) in sync with the new week
+  if(liveModal&&!document.getElementById('modalOv').classList.contains('hide')) liveModal();
 }
 
 // ── AUTOMATION ENGINE ──────────────────────────────
@@ -1261,12 +1265,7 @@ function monthlyTick(){
 }
 
 function yearlyTick(){
-  G.portfolio.forEach(p=>{
-    if(p.marketVal>0){
-      const a=HOODS[p.hood].appreci*(1+(G.mktCycle-50)/100);
-      p.marketVal=Math.round(p.marketVal*(1+a)/1000)*1000;
-    }
-  });
+  // (Market-value appreciation now accrues weekly in tick() — no annual jump here.)
   // Annual rent growth on rented properties
   G.portfolio.filter(p=>p.status==='rented').forEach(p=>{
     const bump=Math.round(p.monthlyRent*rnd(.02,.04)/25)*25;
@@ -1303,12 +1302,24 @@ function executeSale(propId){
   const price=p.listPrice||p.marketVal;
   const costs=Math.round(price*.06);      // 6% agent + closing
   const loan=activeLoan(p);
-  const payoff=loan?loan.balance:0;
+  // Only this property's share of a blanket loan is paid off on sale (must be
+  // computed before the property leaves the portfolio).
+  const payoff=loan?(loan.blanket?Math.round(propDebt(p)):loan.balance):0;
   const share=myShare(p);
   const netFull=price-costs-payoff;
   const net=Math.round(netFull*share);    // operator's share of proceeds (partner takes the rest)
   G.cash+=net;
-  if(loan)loan.status='paid';
+  if(loan){
+    if(loan.blanket){
+      const frac=loan.balance>0?Math.min(1,payoff/loan.balance):1;
+      loan.balance=Math.max(0,loan.balance-payoff);
+      loan.payment=Math.round(loan.payment*(1-frac));
+      loan.propIds=(loan.propIds||[]).filter(id=>id!==propId);
+      if(loan.balance<=0||!loan.propIds.length) loan.status='paid';
+    } else {
+      loan.status='paid';
+    }
+  }
   if(p.partner){
     const partnerCut=netFull-net;
     evFeed(`Partner ${p.partner.name} paid out ${fmt$(partnerCut,true)} (${Math.round(p.partner.equityPct*100)}% of ${p.addr})`,'info');
@@ -2100,9 +2111,18 @@ function executeSFSale(propId){
   const loan=activeLoan(p);
   let netDown=down;
   if(loan){
-    if(down<loan.balance){evFeed(`Down payment (${fmt$(down,true)}) too small to clear your loan on ${p.addr}`,'bad');return;}
-    netDown=down-loan.balance;
-    loan.status='paid';
+    const payoff=loan.blanket?Math.round(propDebt(p)):loan.balance;
+    if(down<payoff){evFeed(`Down payment (${fmt$(down,true)}) too small to clear your loan on ${p.addr}`,'bad');return;}
+    netDown=down-payoff;
+    if(loan.blanket){
+      const frac=loan.balance>0?Math.min(1,payoff/loan.balance):1;
+      loan.balance=Math.max(0,loan.balance-payoff);
+      loan.payment=Math.round(loan.payment*(1-frac));
+      loan.propIds=(loan.propIds||[]).filter(id=>id!==propId);
+      if(loan.balance<=0||!loan.propIds.length) loan.status='paid';
+    } else {
+      loan.status='paid';
+    }
   }
   const sfShare=myShare(p);
   if(p.partner){ G.partners=(G.partners||[]).filter(pt=>pt.propId!==propId); }
@@ -3294,8 +3314,11 @@ function setRuleParam(type,paramId,value){
 }
 
 // ── PER-PROPERTY P&L MODAL ───────────────────────────
+let liveModal=null; // re-rendered each tick so open data-modals (P&L) stay live
 function openPropAnalytics(id){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  // keep this P&L live as weeks advance
+  liveModal=()=>{ if(G.portfolio.some(x=>x.id===id)) openPropAnalytics(id); else { liveModal=null; closeModal(); } };
   const l=activeLoan(p);
   const gross=p.monthlyRent||0;
   const vacPct=p.vacRate||HOODS[p.hood].vacBase;
@@ -3455,7 +3478,7 @@ function completeValueAdd(p){
 }
 
 
-function closeModal(){document.getElementById('modalOv').classList.add('hide');}
+function closeModal(){liveModal=null;document.getElementById('modalOv').classList.add('hide');}
 
 // ── NAVIGATION ──────────────────────────────────────
 function go(id,el){

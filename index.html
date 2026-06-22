@@ -96,6 +96,46 @@ header{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:
 /* cramped phone header: drop the redundant market badge (also shown in row 2) */
 @media (max-width:430px){ #hBadge{display:none} }
 
+/* ── FINANCIAL STATEMENTS (SEC-filing tables) ─────── */
+.stmt{margin:0 12px 4px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.st-row{display:flex;align-items:center;gap:8px;padding:5px 11px;border-bottom:1px solid var(--line-soft)}
+.st-row:last-child{border-bottom:none}
+.st-head{background:var(--surface2);border-bottom:1px solid var(--line)}
+.st-head .st-lbl,.st-head .st-num{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--txt-dim);font-family:var(--sans)}
+.st-grp{padding:7px 11px 3px;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--accent-soft);font-weight:600;background:var(--surface2);border-bottom:1px solid var(--line-soft)}
+.st-lbl{flex:1;min-width:0;font-size:11.5px;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
+.st-num{width:84px;flex:0 0 84px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px}
+.st-ann{color:var(--txt-dim)}
+.st-pctcol{width:46px;flex:0 0 46px;color:var(--txt-dim);font-size:10px;display:none}
+.st-exp{cursor:pointer}
+.st-exp:hover{background:var(--surface2)}
+.st-caret{display:inline-block;width:12px;color:var(--txt-dim);font-size:9px}
+.st-row.sub{background:var(--surface2)}
+.st-row.sub .st-lbl,.st-row.sub .st-num{font-weight:600}
+.st-row.total{background:var(--surface2);border-top:1px solid var(--line)}
+.st-row.total .st-lbl,.st-row.total .st-num{font-weight:700;font-size:12px}
+.st-item{background:var(--bg)}
+.st-item .st-lbl{font-size:10.5px;color:var(--txt-dim)}
+.st-item .st-num{font-size:10.5px;color:var(--txt-dim)}
+.st-check.ok .st-lbl{color:var(--pos)} .st-check.bad .st-lbl,.st-check.bad .st-num{color:var(--neg)}
+.st-bridge{margin-top:6px}
+.st-bsrow .st-num{width:130px;flex:0 0 130px}
+/* schedule rows (per-asset itemization) */
+.sch-row{display:flex;align-items:center;gap:10px;padding:8px 11px;border-bottom:1px solid var(--line-soft)}
+.sch-row:last-child{border-bottom:none}
+.sch-main{flex:1;min-width:0;font-size:12px}
+.sch-sub{font-size:10px;color:var(--txt-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sch-stat{flex:0 0 auto;text-align:right;min-width:64px}
+.sch-stat .sl{font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-dim)}
+.sch-stat .sv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11.5px;font-weight:600}
+.sch-detail{padding:8px 11px;background:var(--bg);border-bottom:1px solid var(--line-soft)}
+@media (min-width:960px){
+  .st-pctcol{display:block}
+  .st-num{width:120px;flex:0 0 120px}
+  .st-bsrow .st-num{width:160px;flex:0 0 160px}
+  .sch-stat{min-width:90px}
+}
+
 /* ── KPI STRIP ────────────────────────────────── */
 .strip{display:flex;margin:0 12px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
 .cell{flex:1;padding:7px 9px;border-right:1px solid var(--line-soft);position:relative;min-width:0;overflow:hidden}
@@ -669,6 +709,11 @@ body{font-size:13.5px}
 
 <!-- FINANCE -->
 <div class="page" id="p-fin">
+  <div class="srcfilter" id="finSubtab" style="padding-top:8px">
+    <span class="segchip on" data-fs="accounts" onclick="setFinTab('accounts',this)">Accounts</span>
+    <span class="segchip" data-fs="stmts" onclick="setFinTab('stmts',this)">Financial Statements</span>
+  </div>
+  <div id="finAccounts">
   <div class="sec"><h2>Debt Summary</h2><div class="rule"></div></div>
   <div class="strip" id="finStrip">
     <div class="cell"><div class="lbl">Total Debt</div><div class="val neg" id="f-debt">$0</div></div>
@@ -683,6 +728,8 @@ body{font-size:13.5px}
   <div id="notesSection"></div>
   <div class="sec"><h2>Investments</h2><div class="rule"></div><span class="act" onclick="openInvestMenu()">+ New</span></div>
   <div id="holdingsSection"></div>
+  </div>
+  <div id="finStmts" style="display:none"></div>
 </div>
 
 <!-- TEAM & AUTOMATION -->
@@ -1130,6 +1177,343 @@ function portCF(){
   return finite(physical+holdingsIncome());
 }
 function dscr(p,pmt){return pmt>0?noi(p)/pmt:999;}
+
+// ── FINANCIAL STATEMENTS AGGREGATOR (read-only reporting) ──────────
+// Walks current state once and returns a fully-itemized set of monthly
+// statements + per-asset schedules. Mirrors the realized-cash math in
+// monthlyTick() so the cash-flow statement reconciles to actual cash, and
+// the balance sheet reconciles to netWorth() via an explicit bridge.
+function companyFinancials(){
+  const F=finite;
+  const hasBook=G.team.some(t=>t.type==='bookkeeper');
+  const txMod=hasBook?.88:1; // monthlyTick realizes resi NOI at txMod
+
+  // ── Per-property decomposition (operator share applied) ──
+  const reSch=[];                 // schedule of real estate
+  let rentResi=0,rentComm=0,vacancy=0,mgmt=0,taxExp=0,insExp=0,maintExp=0,hoaExp=0,landCarry=0,nnnReserve=0;
+  let reNOI=0;                    // Σ assetNOI×share over rented + land carry (accrual real-estate NOI)
+  let resiNoiShare=0,commNoiShareRented=0; // for txMod realized-cash split
+  const reRentItems=[],reCommItems=[],vacItems=[],mgmtItems=[],taxItems=[],insItems=[],maintItems=[],hoaItems=[],carryItems=[],nnnItems=[];
+  G.portfolio.forEach(p=>{
+    const cfg=acCfg(p),isResi=(p.ac||'resi')==='resi',sh=myShare(p);
+    const r=p.monthlyRent||0,rented=p.status==='rented';
+    const nameOf=`${p.addr}`;
+    let rowNOI=0,rowExp={};
+    if(cfg.expenseModel==='full'){
+      const vac=r*(p.vacRate||(HOODS[p.hood]?HOODS[p.hood].vacBase:.05));
+      const mg=r*(p.mgmtPct||0);
+      const tx=p.marketVal*.011/12*(G.taxMod||1)*(p.taxAppeal||1);
+      const ins=(p.sqft||1000)*.042*(G.insuranceMod||1);
+      const mt=(p.sqft||1000)*.083;
+      const hoa=p.hoa||0;
+      rowNOI=r-vac-mg-tx-ins-mt-hoa; rowExp={vacancy:vac,mgmt:mg,tax:tx,insurance:ins,maintenance:mt,hoa};
+      if(rented){
+        (isResi?reRentItems:reCommItems).push({label:nameOf,monthly:r*sh});
+        if(isResi) rentResi+=r*sh; else rentComm+=r*sh;
+        vacancy+=vac*sh; mgmt+=mg*sh; taxExp+=tx*sh; insExp+=ins*sh; maintExp+=mt*sh; hoaExp+=hoa*sh; reNOI+=rowNOI*sh;
+        if(vac)vacItems.push({label:nameOf,monthly:vac*sh}); if(mg)mgmtItems.push({label:nameOf,monthly:mg*sh});
+        taxItems.push({label:nameOf,monthly:tx*sh}); insItems.push({label:nameOf,monthly:ins*sh}); maintItems.push({label:nameOf,monthly:mt*sh});
+        if(hoa)hoaItems.push({label:nameOf,monthly:hoa*sh});
+        if(isResi) resiNoiShare+=rowNOI*sh; else commNoiShareRented+=rowNOI*sh;
+      }
+    } else if(cfg.expenseModel==='nnn-passthrough'){
+      const vac=r*(p.vacRate||.03),mg=r*(p.mgmtPct||0),res=r*.05;
+      rowNOI=r-vac-mg-res; rowExp={vacancy:vac,mgmt:mg,reserve:res};
+      if(rented){
+        reCommItems.push({label:nameOf,monthly:r*sh}); rentComm+=r*sh;
+        vacancy+=vac*sh; mgmt+=mg*sh; nnnReserve+=res*sh; reNOI+=rowNOI*sh;
+        if(vac)vacItems.push({label:nameOf,monthly:vac*sh}); if(mg)mgmtItems.push({label:nameOf,monthly:mg*sh});
+        nnnItems.push({label:nameOf,monthly:res*sh}); commNoiShareRented+=rowNOI*sh;
+      }
+    } else if(cfg.expenseModel==='holding-cost'){
+      const carry=p.marketVal*.011/12*(G.taxMod||1)*(p.taxAppeal||1)+(p.carry||0);
+      rowNOI=-carry; rowExp={carry};
+      if(p.status!=='market'){ landCarry+=carry*sh; reNOI+=rowNOI*sh; carryItems.push({label:nameOf,monthly:carry*sh}); }
+    } else { rowNOI=0; }
+    // schedule row
+    reSch.push({id:p.id,addr:p.addr,cls:isResi?(p.ptype||'Residential'):cfg.label,hood:HOODS[p.hood]?HOODS[p.hood].name:'—',
+      status:p.status,size:p.acres?`${p.acres} ac`:(p.units?`${p.units} units`:`${(p.sqft||0).toLocaleString()} sf`),
+      marketVal:F(p.marketVal||0),basis:F((p.purchasePrice||0)+(p.rehabCost||0)),debt:F(propDebt(p)),
+      equity:F(equity(p)),rent:F(r),noi:F(assetNOI(p)),cf:F((assetNOI(p)-propPayment(p))*sh),share:sh});
+  });
+  const grossRent=rentResi+rentComm;
+
+  // ── Debt: interest vs principal (operator share) ──
+  const debtSch=[]; let intExpense=0,debtPrincipal=0,debtSvc=0;
+  G.loans.filter(l=>l.status==='active').forEach(l=>{
+    const lp=G.portfolio.find(x=>x.id===l.propId);
+    const sh=l.blanket?1:myShare(lp);
+    const interest=l.intOnly?l.payment:(l.balance*(l.rate/12));
+    const principal=Math.max(0,l.payment-interest);
+    intExpense+=interest*sh; debtPrincipal+=principal*sh; debtSvc+=l.payment*sh;
+    let props='—',ltv=0;
+    if(l.blanket){const ps=G.portfolio.filter(x=>(l.propIds||[]).includes(x.id));const tv=ps.reduce((s,x)=>s+(x.marketVal||0),0);props=`Blanket · ${ps.length}`;ltv=tv?l.balance/tv:0;}
+    else{props=lp?lp.addr:(l.subTo?'Subject-To':'—');ltv=lp&&lp.marketVal?l.balance/lp.marketVal:0;}
+    debtSch.push({name:l.name||l.type,type:(l.blanket?'Blanket':l.subTo?'Sub-To':(l.type||'').toUpperCase()),balance:F(l.balance),
+      rate:l.rate,payment:F(l.payment*sh),interest:F(interest*sh),principal:F(principal*sh),
+      term:l.termMonths,paid:l.monthsPaid||0,ltv,props,intOnly:!!l.intOnly});
+  });
+
+  // ── Notes receivable (seller-financed) ──
+  const noteItems=[],invSch=[]; let noteInt=0,notePrincipal=0,noteRecv=0;
+  (G.notes||[]).filter(n=>n.status==='active').forEach(n=>{
+    const interest=Math.round(n.balance*(n.rate/12));
+    const principal=Math.max(0,(n.payment||0)-interest);
+    noteInt+=interest; notePrincipal+=principal; noteRecv+=(n.balance||0);
+    noteItems.push({label:n.addr||n.buyerName||'Note',monthly:interest});
+    invSch.push({kind:'Note Receivable',label:n.addr||n.buyerName||'Seller note',value:F(n.balance),income:F(n.payment||0),
+      rate:n.rate,term:n.termMonths,paid:n.monthsPaid||0,status:n.status,extra:`${fmtPct(n.rate)} · ${fmt$(n.payment||0,true)}/mo`});
+  });
+
+  // ── Financial holdings (lending / liens / syndications) ──
+  let lendInt=0,lendPrincipal=0,dist=0,lienAccrual=0;
+  const lendItems=[],distItems=[],lienItems=[];
+  (G.holdings||[]).filter(h=>h.status==='active').forEach(h=>{
+    if(h.ac==='lending'){
+      const interest=Math.round(h.balance*(h.rate/12));
+      const principal=Math.max(0,(h.payment||0)-interest);
+      lendInt+=interest; lendPrincipal+=principal;
+      lendItems.push({label:h.borrowerName||h.addr||'Private loan',monthly:interest});
+      invSch.push({kind:'Private Loan',label:h.addr||h.borrowerName||'Private loan',value:F(assetValue(h)),income:F(h.payment||0),
+        rate:h.rate,term:h.termMonths,paid:h.monthsPaid||0,status:h.status,extra:`${fmtPct(h.rate)} · ${fmt$(h.payment||0,true)}/mo`});
+    } else if(h.ac==='lien'){
+      const acc=Math.round((h.balance||0)*(h.rate/12)); lienAccrual+=acc;
+      lienItems.push({label:h.addr||'Tax lien',monthly:acc});
+      invSch.push({kind:'Tax Lien',label:h.addr||'Tax lien',value:F(assetValue(h)),income:0,
+        rate:h.rate,term:h.monthsLeft,paid:0,status:h.status,extra:`${fmtPct(h.rate)} accruing · ${h.monthsLeft||0}mo left`});
+    } else if(h.ac==='syndication'||h.ac==='crowdfunding'){
+      dist+=(h.payment||0);
+      distItems.push({label:h.name||h.addr||'Investment',monthly:(h.payment||0)});
+      invSch.push({kind:h.ac==='syndication'?'Syndication LP':'Crowdfunding',label:h.name||h.addr||'Investment',value:F(assetValue(h)),
+        income:F(h.payment||0),rate:h.rate,term:h.termMonths,paid:h.monthsPaid||0,status:h.status,extra:`${fmtPct(h.rate||0)} pref`});
+    }
+  });
+
+  // ── Overhead ──
+  let salaries=0; const salItems=[];
+  G.team.forEach(t=>{const c=(TEAM_TYPES[t.type]?.weeklyCost||0)*4;if(c>0){salaries+=c;salItems.push({label:`${t.name} (${TEAM_TYPES[t.type]?.role||t.type})`,monthly:c});}});
+  const locActive=G.loc&&G.loc.status==='active'&&G.loc.balance>0;
+  const locInt=locActive?Math.round(G.loc.balance*(G.loc.rate/12)):0;
+  const overhead=salaries+locInt;
+  const bookEffect=resiNoiShare*(txMod-1); // bookkeeper monthly tax effect (≤0)
+
+  // ── Income statement (accrual, operator share) ──
+  const otherIncome=noteInt+lendInt+dist;
+  const opex=vacancy+mgmt+taxExp+insExp+maintExp+hoaExp+landCarry+nnnReserve;
+  const netIncome=reNOI+otherIncome-intExpense-overhead+bookEffect;
+
+  // ── Cash-flow run-rate (reconciles to monthlyTick realized cash by construction) ──
+  // Resi NOI realizes at txMod (bookkeeper); land carry is the non-rented portion of reNOI.
+  const rentalCashRealized=resiNoiShare*txMod+commNoiShareRented;
+  const cfOperating=rentalCashRealized + (reNOI-resiNoiShare-commNoiShareRented) /* = -landCarry */
+                    + noteInt + lendInt + dist - intExpense - overhead;
+  const cfFinancing=-debtPrincipal + notePrincipal + lendPrincipal;
+  const cfNet=cfOperating+cfFinancing;
+
+  // ── Balance sheet ──
+  const reMktGross=G.portfolio.reduce((s,p)=>s+(p.marketVal||0),0);
+  const minority=G.portfolio.reduce((s,p)=>s+(p.partner?(p.marketVal-propDebt(p))*(p.partner.equityPct||0):0),0);
+  const invValue=holdingsValue();
+  const assetsCash=F(G.cash),reserve=F(G.reserve||0),notesAsset=F(noteRecv);
+  const totalAssets=assetsCash+reserve+F(reMktGross)+notesAsset+F(invValue);
+  const mortgages=F(totalDebt()),locBal=F(locActive?G.loc.balance:0),minorityF=F(minority);
+  const totalLiab=mortgages+locBal+minorityF;
+  const ownerEquity=totalAssets-totalLiab;
+  const nw=netWorth();
+  const bridgeResidual=ownerEquity-(nw+reserve+notesAsset-locBal);
+
+  return {
+    period:`${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][G.month-1]} ${G.year}`,
+    income:{
+      revenue:[
+        {key:'rent_resi',label:'Residential rental income',monthly:F(rentResi),items:reRentItems},
+        {key:'rent_comm',label:'Commercial / other rental income',monthly:F(rentComm),items:reCommItems},
+      ],
+      grossRent:F(grossRent),
+      opex:[
+        {key:'vac',label:'Vacancy & credit loss',monthly:F(-vacancy),items:vacItems},
+        {key:'mgmt',label:'Property management',monthly:F(-mgmt),items:mgmtItems},
+        {key:'tax',label:'Property taxes',monthly:F(-taxExp),items:taxItems},
+        {key:'ins',label:'Insurance',monthly:F(-insExp),items:insItems},
+        {key:'maint',label:'Repairs & maintenance',monthly:F(-maintExp),items:maintItems},
+        {key:'hoa',label:'HOA / association dues',monthly:F(-hoaExp),items:hoaItems},
+        {key:'carry',label:'Land holding costs',monthly:F(-landCarry),items:carryItems},
+        {key:'nnn',label:'Structural reserves (NNN)',monthly:F(-nnnReserve),items:nnnItems},
+      ],
+      noi:F(reNOI),
+      other:[
+        {key:'note_int',label:'Note interest income',monthly:F(noteInt),items:noteItems},
+        {key:'lend_int',label:'Private lending interest',monthly:F(lendInt),items:lendItems},
+        {key:'dist',label:'Investment distributions',monthly:F(dist),items:distItems},
+      ],
+      below:[
+        {key:'int',label:'Interest expense',monthly:F(-intExpense),items:debtSch.map(d=>({label:d.name,monthly:-d.interest}))},
+        {key:'salary',label:'Payroll / G&A',monthly:F(-salaries),items:salItems},
+        {key:'loc',label:'Line-of-credit interest',monthly:F(-locInt),items:[]},
+        {key:'book',label:'Income tax — bookkeeper effect',monthly:F(bookEffect),items:[]},
+      ],
+      netIncome:F(netIncome),
+      memo:[
+        {key:'lien',label:'Tax-lien interest accrued (non-cash)',monthly:F(lienAccrual),items:lienItems},
+      ],
+    },
+    cashFlow:{operating:F(cfOperating),financing:F(cfFinancing),net:F(cfNet),
+      principalIn:F(notePrincipal+lendPrincipal),principalOut:F(debtPrincipal)},
+    balance:{
+      assets:[
+        {key:'cash',label:'Cash & equivalents',v:assetsCash},
+        {key:'reserve',label:'Repair reserve',v:reserve},
+        {key:'re',label:'Real estate, at market value',v:F(reMktGross),items:reSch.map(r=>({label:r.addr,monthly:r.marketVal}))},
+        {key:'notes',label:'Notes receivable',v:notesAsset,items:noteItems.map((n,i)=>({label:n.label,monthly:invSch.filter(x=>x.kind==='Note Receivable')[i]?.value||0}))},
+        {key:'inv',label:'Investments, at value',v:F(invValue)},
+      ],
+      totalAssets:F(totalAssets),
+      liabilities:[
+        {key:'mort',label:'Mortgages & loans payable',v:mortgages,items:debtSch.map(d=>({label:d.name,monthly:d.balance}))},
+        {key:'loc',label:'Line of credit drawn',v:locBal},
+        {key:'minority',label:'Partner minority interest',v:minorityF},
+      ],
+      totalLiab:F(totalLiab),
+      equity:F(ownerEquity),
+      netWorth:F(nw),
+      bridge:{reserve:reserve,notes:notesAsset,loc:locBal,residual:F(bridgeResidual)},
+    },
+    schedules:{realEstate:reSch,debt:debtSch,investments:invSch},
+  };
+}
+
+// ── FINANCIAL STATEMENTS RENDERER ──────────────────
+const stmtOpen=new Set(); // which drill-down rows are expanded (survives re-render)
+function toggleStmtRow(key){ if(stmtOpen.has(key)) stmtOpen.delete(key); else stmtOpen.add(key); renderStatements(); }
+function fmtMoney(n){ n=Math.round(finite(n)); return (n<0?'−$':'$')+Math.abs(n).toLocaleString(); }
+// One statement line with optional drill-down items.
+function stRow(key,label,monthly,o){
+  o=o||{}; const base=o.base, hasItems=o.items&&o.items.length, open=hasItems&&stmtOpen.has(key);
+  const caret=hasItems?`<span class="st-caret">${open?'▾':'▸'}</span>`:'<span class="st-caret"></span>';
+  const cls='st-row'+(o.cls?' '+o.cls:'')+(hasItems?' st-exp':'');
+  const click=hasItems?`onclick="toggleStmtRow('${key}')"`:'';
+  const mClr=monthly<0?'neg':(o.pos&&monthly>0?'pos':'');
+  const pct=(base&&base!==0)?(monthly/base*100).toFixed(1)+'%':'';
+  let h=`<div class="${cls}" ${click}>
+    <div class="st-lbl" style="padding-left:${(o.indent||0)*14}px">${caret}${label}</div>
+    <div class="st-num ${mClr}">${fmtMoney(monthly)}</div>
+    <div class="st-num st-ann">${fmtMoney(monthly*12)}</div>
+    <div class="st-num st-pctcol">${pct}</div>
+  </div>`;
+  if(open) h+=o.items.map(it=>`<div class="st-row st-item">
+      <div class="st-lbl" style="padding-left:${((o.indent||0)+1)*14+14}px">${it.label}</div>
+      <div class="st-num">${fmtMoney(it.monthly)}</div>
+      <div class="st-num st-ann">${fmtMoney(it.monthly*12)}</div>
+      <div class="st-num st-pctcol"></div>
+    </div>`).join('');
+  return h;
+}
+function stHead(){return`<div class="st-row st-head"><div class="st-lbl">Line item</div><div class="st-num">Monthly</div><div class="st-num st-ann">Annualized</div><div class="st-num st-pctcol">% rev</div></div>`;}
+function renderStatements(){
+  const el=document.getElementById('finStmts'); if(!el) return;
+  const d=companyFinancials();
+  const totRev=d.income.grossRent + d.income.other.reduce((s,o)=>s+o.monthly,0);
+  const opexTot=d.income.opex.reduce((s,o)=>s+o.monthly,0);
+  let h=`<div class="subnote" style="padding:6px 12px 2px">As of ${d.period} · figures are current monthly run-rate (operator's share), annualized ×12.</div>`;
+
+  // ── Statement of Operations ──
+  h+=`<div class="sec"><h2>Statement of Operations (Income)</h2><div class="rule"></div></div><div class="stmt">${stHead()}`;
+  h+=`<div class="st-grp">Revenue</div>`;
+  d.income.revenue.forEach(r=>h+=stRow('inc_'+r.key,r.label,r.monthly,{items:r.items,base:totRev,indent:1,pos:true}));
+  h+=stRow('inc_gross','Gross Rental Income',d.income.grossRent,{cls:'sub',base:totRev});
+  d.income.other.forEach(r=>{ if(r.monthly||r.items.length) h+=stRow('inc_'+r.key,r.label,r.monthly,{items:r.items,base:totRev,indent:1,pos:true}); });
+  h+=stRow('inc_totrev','Total Revenue',totRev,{cls:'total',base:totRev});
+  h+=`<div class="st-grp">Operating Expenses</div>`;
+  d.income.opex.forEach(r=>{ if(r.monthly||r.items.length) h+=stRow('opx_'+r.key,r.label,r.monthly,{items:r.items,base:totRev,indent:1}); });
+  h+=stRow('opx_tot','Total Operating Expenses',opexTot,{cls:'sub',base:totRev});
+  h+=stRow('noi','NET OPERATING INCOME',d.income.noi,{cls:'total',base:totRev,pos:true});
+  h+=`<div class="st-grp">Below NOI</div>`;
+  d.income.below.forEach(r=>{ if(r.monthly||r.items.length) h+=stRow('blw_'+r.key,r.label,r.monthly,{items:r.items,base:totRev,indent:1}); });
+  h+=stRow('netinc','NET INCOME (accrual)',d.income.netIncome,{cls:'total',base:totRev,pos:true});
+  d.income.memo.forEach(r=>{ if(r.monthly) h+=stRow('memo_'+r.key,r.label+' †',r.monthly,{items:r.items,indent:1}); });
+  h+=`</div><div class="subnote" style="padding:4px 12px">† Non-cash: accrues to value, paid at redemption — excluded from net income & cash flow.</div>`;
+
+  // ── Cash-Flow Run-Rate ──
+  h+=`<div class="sec"><h2>Cash-Flow Run-Rate</h2><div class="rule"></div></div><div class="stmt">${stHead()}`;
+  h+=stRow('cf_op','Operating activities',d.cashFlow.operating,{});
+  h+=stRow('cf_fin','Financing & investing (principal)',d.cashFlow.financing,{});
+  h+=`<div class="st-row st-item"><div class="st-lbl" style="padding-left:28px">Loan principal received (notes/lending)</div><div class="st-num">${fmtMoney(d.cashFlow.principalIn)}</div><div class="st-num st-ann">${fmtMoney(d.cashFlow.principalIn*12)}</div><div class="st-num st-pctcol"></div></div>`;
+  h+=`<div class="st-row st-item"><div class="st-lbl" style="padding-left:28px">Debt principal amortization</div><div class="st-num">${fmtMoney(-d.cashFlow.principalOut)}</div><div class="st-num st-ann">${fmtMoney(-d.cashFlow.principalOut*12)}</div><div class="st-num st-pctcol"></div></div>`;
+  h+=stRow('cf_net','NET MONTHLY CHANGE IN CASH',d.cashFlow.net,{cls:'total',pos:true});
+  h+=`</div>`;
+
+  // ── Balance Sheet ──
+  const b=d.balance;
+  h+=`<div class="sec"><h2>Balance Sheet</h2><div class="rule"></div></div><div class="stmt st-bs">${stBSHead()}`;
+  h+=`<div class="st-grp">Assets</div>`;
+  b.assets.forEach(a=>h+=stBSRow('bsa_'+a.key,a.label,a.v,a.items,1));
+  h+=stBSRow('bsa_tot','TOTAL ASSETS',b.totalAssets,null,0,'total');
+  h+=`<div class="st-grp">Liabilities</div>`;
+  b.liabilities.forEach(a=>h+=stBSRow('bsl_'+a.key,a.label,a.v,a.items,1));
+  h+=stBSRow('bsl_tot','TOTAL LIABILITIES',b.totalLiab,null,0,'total');
+  h+=stBSRow('bs_eq',"OWNER'S EQUITY",b.equity,null,0,'total');
+  h+=`</div>`;
+  // bridge to header net worth
+  const resid=b.bridge.residual;
+  h+=`<div class="stmt st-bridge"><div class="st-grp">Reconciliation to Net Worth (header)</div>`;
+  h+=stBSRow('br_nw','Net Worth (header figure)',b.netWorth,null,1);
+  h+=stBSRow('br_res','+ Repair reserve (outside header NW)',b.bridge.reserve,null,1);
+  h+=stBSRow('br_note','+ Notes receivable (outside header NW)',b.bridge.notes,null,1);
+  h+=stBSRow('br_loc','− Line of credit (header NW omits this)',-b.bridge.loc,null,1);
+  h+=`<div class="st-row st-check ${Math.abs(resid)<2?'ok':'bad'}"><div class="st-lbl">${Math.abs(resid)<2?'✓ Reconciles to Owner\'s Equity':'⚠ Residual (off by)'}</div><div class="st-num">${Math.abs(resid)<2?fmtMoney(b.equity):fmtMoney(resid)}</div><div class="st-num st-ann"></div><div class="st-num st-pctcol"></div></div></div>`;
+
+  // ── Schedules ──
+  h+=`<div class="sec"><h2>Schedule of Real Estate (${d.schedules.realEstate.length})</h2><div class="rule"></div></div><div class="stmt">`;
+  if(!d.schedules.realEstate.length) h+=`<div class="subnote" style="padding:12px">No properties owned.</div>`;
+  d.schedules.realEstate.forEach(r=>{
+    const k='re_'+r.id, open=stmtOpen.has(k);
+    h+=`<div class="sch-row st-exp" onclick="toggleStmtRow('${k}')">
+      <div class="sch-main"><span class="st-caret">${open?'▾':'▸'}</span><b>${r.addr}</b><div class="sch-sub">${r.cls} · ${r.hood} · ${r.size} · ${r.status.toUpperCase()}</div></div>
+      <div class="sch-stat"><div class="sl">Mkt Value</div><div class="sv">${fmt$(r.marketVal,true)}</div></div>
+      <div class="sch-stat"><div class="sl">Equity</div><div class="sv pos">${fmt$(r.equity,true)}</div></div>
+      <div class="sch-stat"><div class="sl">CF/mo</div><div class="sv ${r.cf>=0?'pos':'neg'}">${fmtCF(Math.round(r.cf))}</div></div>
+    </div>`;
+    if(open){ const p=G.portfolio.find(x=>x.id===r.id); if(p) h+=`<div class="sch-detail">${analyticsInner(p)}</div>`; }
+  });
+  h+=`</div>`;
+
+  h+=`<div class="sec"><h2>Schedule of Debt (${d.schedules.debt.length})</h2><div class="rule"></div></div><div class="stmt">`;
+  if(!d.schedules.debt.length) h+=`<div class="subnote" style="padding:12px">No active debt.</div>`;
+  d.schedules.debt.forEach((l,i)=>{
+    h+=`<div class="sch-row">
+      <div class="sch-main"><b>${l.name}</b> <span class="badge">${l.type}</span><div class="sch-sub">${l.props} · ${fmtPct(l.rate)} · ${l.paid}/${l.term||'—'}mo · LTV ${l.ltv?fmtPct(l.ltv):'—'}</div></div>
+      <div class="sch-stat"><div class="sl">Balance</div><div class="sv neg">${fmt$(l.balance,true)}</div></div>
+      <div class="sch-stat"><div class="sl">Pmt</div><div class="sv">${fmt$(l.payment,true)}</div></div>
+      <div class="sch-stat"><div class="sl">Int / Prin</div><div class="sv">${fmt$(l.interest,true)} / ${fmt$(l.principal,true)}</div></div>
+    </div>`;
+  });
+  h+=`</div>`;
+
+  h+=`<div class="sec"><h2>Schedule of Investments (${d.schedules.investments.length})</h2><div class="rule"></div></div><div class="stmt">`;
+  if(!d.schedules.investments.length) h+=`<div class="subnote" style="padding:12px">No notes or financial holdings.</div>`;
+  d.schedules.investments.forEach(v=>{
+    h+=`<div class="sch-row">
+      <div class="sch-main"><b>${v.label}</b> <span class="badge info">${v.kind}</span><div class="sch-sub">${v.extra} · ${v.status}</div></div>
+      <div class="sch-stat"><div class="sl">Value</div><div class="sv">${fmt$(v.value,true)}</div></div>
+      <div class="sch-stat"><div class="sl">Income/mo</div><div class="sv ${v.income>0?'pos':''}">${fmt$(v.income,true)}</div></div>
+      <div class="sch-stat"><div class="sl">Term</div><div class="sv">${v.term||'—'}mo</div></div>
+    </div>`;
+  });
+  h+=`</div>`;
+
+  el.innerHTML=h;
+}
+function stBSHead(){return`<div class="st-row st-head"><div class="st-lbl">Line item</div><div class="st-num">Amount</div></div>`;}
+function stBSRow(key,label,v,items,indent,cls){
+  const hasItems=items&&items.length, open=hasItems&&stmtOpen.has(key);
+  const caret=hasItems?`<span class="st-caret">${open?'▾':'▸'}</span>`:'<span class="st-caret"></span>';
+  const click=hasItems?`onclick="toggleStmtRow('${key}')"`:'';
+  let h=`<div class="st-row st-bsrow${cls?' '+cls:''}${hasItems?' st-exp':''}" ${click}>
+    <div class="st-lbl" style="padding-left:${(indent||0)*14}px">${caret}${label}</div>
+    <div class="st-num ${v<0?'neg':''}">${fmtMoney(v)}</div></div>`;
+  if(open) h+=items.map(it=>`<div class="st-row st-item st-bsrow"><div class="st-lbl" style="padding-left:${((indent||0)+1)*14+14}px">${it.label}</div><div class="st-num">${fmtMoney(it.monthly)}</div></div>`).join('');
+  return h;
+}
 
 // ── PROPERTY GENERATION ────────────────────────────
 function rnd(a,b){return a+Math.random()*(b-a);}
@@ -3480,6 +3864,8 @@ function propOwnCard(p){
 }
 
 function renderFin(){
+  // keep the Financial Statements sub-tab live as weeks advance
+  if(G_finTab==='stmts'){ renderStatements(); }
   const active=G.loans.filter(l=>l.status==='active');
   const debt=totalDebt(),dsvc=totalDSvc();
   const el=document.getElementById('f-debt');el.textContent=fmt$(debt,true);
@@ -4119,6 +4505,16 @@ function openHireModal(){
 }
 
 // ── TEAM SUBTAB ─────────────────────────────────────
+let G_finTab='accounts';
+function setFinTab(t,el){
+  if(!el)return;
+  document.querySelectorAll('#finSubtab .segchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  G_finTab=t;
+  document.getElementById('finAccounts').style.display=t==='accounts'?'':'none';
+  document.getElementById('finStmts').style.display=t==='stmts'?'':'none';
+  if(t==='stmts') renderStatements();
+}
 let G_teamTab='team';
 function setTeamTab(t,el){
   if(!el)return;

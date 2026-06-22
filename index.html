@@ -1855,6 +1855,15 @@ function runRegionalOps(){
   Object.keys(G.regions).forEach(hk=>{
     if(!regionalActive(hk)) return;
     G.portfolio.filter(p=>p.hood===hk).forEach(p=>{
+      const cfg=acCfg(p);
+      if((p.ac||'resi')!=='resi'){
+        // Non-residential income assets: re-lease any that have gone vacant
+        if(p.status==='vacant'&&cfg.incomeModel!=='none'){
+          p.status=cfg.initialState||'rented'; p.tenant='Operating';
+          evFeed(`[RM ${HOODS[hk].name}] Re-leased ${cfg.label}: ${p.addr}`,'good');
+        }
+        return; // construction/land/operating commercial need no resi-style ops
+      }
       if(p.status==='vacant'&&p.cond<5&&!p.vaWeeksLeft&&G.cash>=p.rehabEst+5000){
         G.cash-=p.rehabEst;p.status='rehab';p.rehabWeeksLeft=REHAB_WKS[p.cond];p.rehabWksTotal=REHAB_WKS[p.cond];p.rehabCost=p.rehabEst;
         ledger(`[RM] Rehab: ${p.addr}`,-p.rehabEst);
@@ -2784,32 +2793,34 @@ function hoodTrendArrow(hk){
 
 // ── PORTFOLIO HEALTH SCORE ─────────────────────────
 function portfolioScore(){
-  const rented=G.portfolio.filter(p=>p.status==='rented');
   if(!G.portfolio.length) return{score:0,grade:'—',pts:{coc:0,dscr:0,vac:0,dte:0,div:0},vals:{coc:0,dscr:0,vac:0,dte:0}};
+  // Income/leverage metrics are measured over income-producing properties only
+  // (excludes raw land, construction, and listed assets so they don't skew them).
+  const income=G.portfolio.filter(p=>p.status==='rented');
 
-  // Cash-on-Cash (0-20 pts)
+  // Cash-on-Cash (0-20 pts) — class-aware NOI
   let avgCoC=0;
-  if(rented.length){
-    avgCoC=rented.reduce((s,p)=>{
-      const l=activeLoan(p),cf=noi(p)-(l?l.payment:0);
+  if(income.length){
+    avgCoC=income.reduce((s,p)=>{
+      const l=activeLoan(p),cf=assetNOI(p)-(l?propPayment(p):0);
       return s+(p.cashInvested>0?cf*12/p.cashInvested:0);
-    },0)/rented.length;
+    },0)/income.length;
   }
   const cocPts=avgCoC>=.10?20:avgCoC>=.07?17:avgCoC>=.05?13:avgCoC>=.03?9:avgCoC>=.01?5:2;
 
-  // DSCR avg (0-20 pts)
-  const activeLoans=G.loans.filter(l=>l.status==='active'&&l.payment>0);
+  // DSCR avg (0-20 pts) — only loans on income properties
+  const scoredLoans=G.loans.filter(l=>{const p=G.portfolio.find(x=>x.id===l.propId);return l.status==='active'&&l.payment>0&&p&&p.status==='rented';});
   let avgDSCR=999;
-  if(activeLoans.length){
-    avgDSCR=activeLoans.reduce((s,l)=>{
+  if(scoredLoans.length){
+    avgDSCR=scoredLoans.reduce((s,l)=>{
       const p=G.portfolio.find(x=>x.id===l.propId);
-      return s+(p?noi(p)/l.payment:1.5);
-    },0)/activeLoans.length;
+      return s+(p?assetNOI(p)/l.payment:1.5);
+    },0)/scoredLoans.length;
   }
   const dscrPts=avgDSCR>=1.5?20:avgDSCR>=1.25?16:avgDSCR>=1.0?10:avgDSCR>=.9?5:0;
 
-  // Vacancy rate avg (0-20 pts)
-  const avgVac=G.portfolio.reduce((s,p)=>s+(p.vacRate||HOODS[p.hood].vacBase),0)/G.portfolio.length;
+  // Vacancy rate avg (0-20 pts) — income properties only
+  const avgVac=income.length?income.reduce((s,p)=>s+(p.vacRate||(HOODS[p.hood]?HOODS[p.hood].vacBase:.05)),0)/income.length:.05;
   const vacPts=avgVac<.04?20:avgVac<.06?17:avgVac<.09?13:avgVac<.12?9:avgVac<.15?5:2;
 
   // Debt-to-equity (0-20 pts)
@@ -2817,11 +2828,11 @@ function portfolioScore(){
   const dte=eq>0?debt/eq:debt>0?2:0;
   const dtePts=dte<.3?20:dte<.5?17:dte<.7?13:dte<1.0?9:dte<1.5?5:2;
 
-  // Diversification (0-20 pts)
+  // Diversification (0-20 pts) — by neighborhood and by asset class
   const hoods=new Set(G.portfolio.map(p=>p.hood)).size;
-  const types=new Set(G.portfolio.map(p=>p.ptype)).size;
+  const types=new Set(G.portfolio.map(p=>p.ac||'resi')).size;
   const n=G.portfolio.length;
-  const divPts=hoods>=3&&types>=2?20:hoods>=3||types>=2?16:hoods>=2&&n>=3?13:hoods>=2?10:n>=2?7:n>=1?4:0;
+  const divPts=hoods>=3&&types>=3?20:(hoods>=3&&types>=2)||types>=3?17:hoods>=2&&types>=2?13:hoods>=2||types>=2?10:n>=2?7:n>=1?4:0;
 
   const score=cocPts+dscrPts+vacPts+dtePts+divPts;
   const grade=score>=90?'A+':score>=85?'A':score>=80?'A−':score>=75?'B+':score>=70?'B':score>=65?'B−':score>=58?'C+':score>=52?'C':score>=45?'C−':score>=35?'D':'F';
@@ -2846,7 +2857,7 @@ function renderScoreWidget(){
     ${mkScoreRow('DSCR Coverage',sc.pts.dscr,20,sc.vals.dscr===999?'∞':sc.vals.dscr.toFixed(2)+'×')}
     ${mkScoreRow('Avg Vacancy Rate',sc.pts.vac,20,fmtPct(sc.vals.vac))}
     ${mkScoreRow('Debt / Equity',sc.pts.dte,20,fmtPct(sc.vals.dte))}
-    ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ptype)).size+' types')}
+    ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ac||'resi')).size+' classes')}
     <div style="height:6px"></div>
   </div>`;
 }
@@ -2893,7 +2904,7 @@ function showYearReport(yr){
       ${mkScoreRow('DSCR Coverage',sc.pts.dscr,20,sc.vals.dscr===999?'∞':sc.vals.dscr.toFixed(2)+'×')}
       ${mkScoreRow('Avg Vacancy Rate',sc.pts.vac,20,fmtPct(sc.vals.vac))}
       ${mkScoreRow('Debt / Equity',sc.pts.dte,20,fmtPct(sc.vals.dte))}
-      ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ptype)).size+' types')}
+      ${mkScoreRow('Diversification',sc.pts.div,20,new Set(G.portfolio.map(p=>p.hood)).size+' hoods · '+new Set(G.portfolio.map(p=>p.ac||'resi')).size+' classes')}
       <div style="height:4px"></div>
     </div>
     <button class="mbtn pri wide" onclick="closeModal()">Start Year ${yr+1} →</button>`;

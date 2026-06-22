@@ -637,6 +637,8 @@ body{font-size:13.5px}
   <div id="locSection"></div>
   <div class="sec" id="noteSecHdr" style="display:none"><h2>Notes Receivable</h2><div class="rule"></div></div>
   <div id="notesSection"></div>
+  <div class="sec"><h2>Investments</h2><div class="rule"></div><span class="act" onclick="openInvestMenu()">+ New</span></div>
+  <div id="holdingsSection"></div>
 </div>
 
 <!-- TEAM & AUTOMATION -->
@@ -874,6 +876,11 @@ const ASSET_CLASSES = {
       const ask=Math.round(spaces*rnd(6000,18000)/1000)*1000;
       const monthlyRent=Math.round(spaces*rnd(60,180)*rnd(.7,.92)/25)*25;
       return baseAsset('parking',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} Parking`, units:spaces, sqft, ask, arv:ask, monthlyRent, vacRate:.08}); } },
+  // ── P2: financial holdings (private lending + tax liens) ──
+  lending:{key:'lending',label:'Private Loan',icon:'🏦',cat:'Lending',surface:'finance',container:'holdings',physical:false,
+    incomeModel:'interest',expenseModel:'none',appreciation:'none',valuation:'face',financing:['none'],risk:.05},
+  lien:{key:'lien',label:'Tax Lien',icon:'⚖️',cat:'Lien',surface:'finance',container:'holdings',physical:false,
+    incomeModel:'none',expenseModel:'none',appreciation:'none',valuation:'face',financing:['none'],risk:.20},
   farm:{key:'farm',label:'Farmland',icon:'🌾',cat:'Land',surface:'market',container:'portfolio',physical:true,
     incomeModel:'rent',expenseModel:'nnn-passthrough',appreciation:'fixed',apprFixed:.05,valuation:'comp',
     financing:['cash','conv','priv'],states:['market','rented','listed'],initialState:'rented',risk:.03,
@@ -1067,6 +1074,18 @@ function genAsset(ac,seed){
   const cfg=ASSET_CLASSES[ac]||ASSET_CLASSES.resi;
   if(typeof cfg.generate==='function') return cfg.generate(seed);
   const p=genProp(); p.ac=ac; return p;
+}
+// When a loan defaults or a lien forecloses, the collateral property enters
+// the portfolio as a turnkey residential at its collateral value.
+function materializeCollateral(h, value){
+  const p=genProp(); p.ac='resi';
+  p.marketVal=Math.round(value); p.arv=Math.round(value*1.05);
+  p.purchasePrice=Math.round(h.balance||value*.6);
+  p.cashInvested=Math.round(h.balance||0);
+  p.status='vacant'; p.cond=5; p.rehabEst=0; p.rehabWeeksLeft=0;
+  if(h.addr) p.addr=h.addr;
+  p.monthlyRent=p.monthlyRent||Math.round(value*.007/25)*25;
+  return p;
 }
 function genMarket(n){
   const ct=Math.round(n*(G.mMod.df||1));
@@ -1411,6 +1430,40 @@ function monthlyTick(){
     }
   });
   if(monthlyNoteIncome>0) ledger('Note Payments Received',monthlyNoteIncome);
+
+  // ── Financial holdings: private loans + tax liens ──
+  (G.holdings||[]).filter(h=>h.status==='active').forEach(h=>{
+    if(h.ac==='lending'){
+      const interest=Math.round(h.balance*(h.rate/12));
+      const principal=Math.max(0,h.payment-interest);
+      h.balance=Math.max(0,h.balance-principal); h.monthsPaid=(h.monthsPaid||0)+1;
+      G.cash+=h.payment; ledger(`Loan income: ${h.borrowerName}`,h.payment);
+      if(Math.random()<(h.defaultProb||.004)){
+        // Borrower defaults → you foreclose and take the collateral property
+        h.status='defaulted';
+        const prop=materializeCollateral(h, h.collateralValue);
+        G.portfolio.push(prop);
+        evFeed(`⚠ Borrower defaulted on ${h.addr} — you foreclosed and took the property (${fmt$(prop.marketVal,true)})`,'warn');
+      } else if(h.balance<=0||h.monthsPaid>=h.termMonths){
+        h.status='paid'; evFeed(`Loan paid off by ${h.borrowerName} — principal returned`,'good');
+      }
+    } else if(h.ac==='lien'){
+      h.accrued=(h.accrued||0)+Math.round(h.balance*(h.rate/12)); // statutory interest accrues
+      h.monthsLeft=(h.monthsLeft||0)-1;
+      if(h.monthsLeft<=0){
+        if(Math.random()<.78){
+          const proceeds=h.balance+h.accrued; G.cash+=proceeds; ledger(`Lien redeemed: ${h.addr}`,proceeds);
+          h.status='redeemed';
+          evFeed(`Tax lien redeemed: ${h.addr} — +${fmt$(proceeds,true)} (${fmt$(h.accrued,true)} interest)`,'good');
+        } else {
+          h.status='foreclosed';
+          const prop=materializeCollateral(h, h.collateralValue);
+          G.portfolio.push(prop);
+          evFeed(`🏆 Tax-deed acquired: ${h.addr} — you got the property (worth ${fmt$(prop.marketVal,true)}) for the ${fmt$(h.balance,true)} lien!`,'good');
+        }
+      }
+    }
+  });
 
   // Screener: halve late pay probability portfolio-wide
   if(G.team.some(t=>t.type==='screener')){
@@ -2347,6 +2400,100 @@ function renderNotesSection(){
     }).join('')}`;
 }
 
+// ── FINANCIAL HOLDINGS (private lending + tax liens) ──
+function renderHoldings(){
+  const el=document.getElementById('holdingsSection'); if(!el) return;
+  const active=(G.holdings||[]).filter(h=>h.status==='active');
+  if(!active.length){
+    el.innerHTML=`<div class="subnote" style="padding:4px 12px 10px;color:var(--txt-dim)">No active investments. Tap <b>+ New</b> to originate a private loan (steady interest) or buy a tax lien (fixed-interest windfall, with a chance to foreclose into the property cheaply) — passive income, no property to manage.</div>`;
+    return;
+  }
+  const totalVal=active.reduce((s,h)=>s+assetValue(h),0);
+  const monthlyInc=active.reduce((s,h)=>s+(h.payment||0),0);
+  el.innerHTML=`<div class="strip" style="margin-bottom:10px">
+    <div class="cell"><div class="lbl">Holdings</div><div class="val">${active.length}</div></div>
+    <div class="cell"><div class="lbl">Invested Value</div><div class="val pos">${fmt$(totalVal,true)}</div></div>
+    <div class="cell"><div class="lbl">Monthly Income</div><div class="val pos">${fmt$(monthlyInc,true)}/mo</div></div>
+  </div>`+active.map(h=>{
+    const cfg=acCfg(h);
+    if(h.ac==='lending'){
+      const pct=Math.min(100,Math.round((h.monthsPaid||0)/h.termMonths*100));
+      return`<div class="loan-card conv"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.addr}</div><div class="loan-prop">${h.borrowerName} · ${h.termMonths-(h.monthsPaid||0)}mo left</div></div><span class="badge pos">LOAN</span></div>
+        <div class="loan-nums"><div class="lcell"><div class="ll">Balance</div><div class="lv">${fmt$(h.balance,true)}</div></div><div class="lcell"><div class="ll">Income</div><div class="lv pos">${fmt$(h.payment,true)}/mo</div></div><div class="lcell"><div class="ll">Rate</div><div class="lv">${fmtPct(h.rate)}</div></div><div class="lcell"><div class="ll">Paid</div><div class="lv">${pct}%</div></div></div></div>`;
+    }
+    return`<div class="loan-card priv"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.addr}</div><div class="loan-prop">Tax lien · matures ${h.monthsLeft}mo</div></div><span class="badge warn">LIEN</span></div>
+      <div class="loan-nums"><div class="lcell"><div class="ll">Lien Face</div><div class="lv">${fmt$(h.balance,true)}</div></div><div class="lcell"><div class="ll">Accrued</div><div class="lv pos">${fmt$(h.accrued||0,true)}</div></div><div class="lcell"><div class="ll">Rate</div><div class="lv">${fmtPct(h.rate)}</div></div><div class="lcell"><div class="ll">Matures</div><div class="lv">${h.monthsLeft}mo</div></div></div></div>`;
+  }).join('');
+}
+function openInvestMenu(){
+  document.getElementById('modalBox').innerHTML=`<div class="x" onclick="closeModal()">×</div><h3>New Investment</h3>
+    <div class="dec" style="margin:6px 0 12px"><div class="db">Passive income with no property to manage. Originate a private loan for steady monthly interest, or buy a tax lien for a fixed-interest windfall — with a chance to foreclose into the property for pennies.</div></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="mbtn green wide" onclick="openOriginateModal()">🏦 Originate a Private Loan →</button>
+      <button class="mbtn warn wide" onclick="openLienBrowse()">⚖️ Browse Tax Liens →</button>
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function openOriginateModal(){
+  const render=()=>{
+    const amt=parseInt(document.getElementById('lendAmt')?.value)||50000;
+    const term=parseInt(document.getElementById('lendTerm')?.value)||24;
+    const rate=.11+(term<=12?.02:term>=48?-.01:0);
+    const pmt=Math.round(mpmt(amt,rate,term));
+    const annual=pmt*12-amt/term*12; // rough interest/yr
+    const el=document.getElementById('origResult'); if(!el)return;
+    el.innerHTML=`<div class="frow"><span class="fl">Interest Rate</span><span class="fv pos">${fmtPct(rate)}</span></div>
+      <div class="frow"><span class="fl">Monthly Payment to You</span><span class="fv pos">${fmt$(pmt)}/mo</span></div>
+      <div class="frow"><span class="fl">Collateral (property)</span><span class="fv">~${fmt$(Math.round(amt*1.65),true)}</span></div>
+      <div class="frow tot"><span class="fl">Cash to Fund</span><span class="fv ${G.cash>=amt?'pos':'neg'}">${fmt$(amt)}</span></div>`;
+  };
+  window.renderOrig=render;
+  document.getElementById('modalBox').innerHTML=`<div class="x" onclick="closeModal()">×</div><h3>🏦 Originate a Private Loan</h3>
+    <div class="fq" style="margin-bottom:6px"><div class="fqL">Loan Amount</div><input class="fqI" type="number" id="lendAmt" value="50000" step="5000" min="5000" oninput="renderOrig()"></div>
+    <div class="fq" style="margin-bottom:10px"><div class="fqL">Term</div><select class="fqI" id="lendTerm" style="padding:6px 10px;height:auto" onchange="renderOrig()"><option value="12">12 months</option><option value="24" selected>24 months</option><option value="36">36 months</option><option value="60">60 months</option></select></div>
+    <div class="card" id="origResult" style="margin:0 0 12px"></div>
+    <div style="display:flex;gap:7px"><button class="mbtn green" onclick="executeOriginate()">Fund Loan →</button><button class="mbtn" onclick="closeModal()">Cancel</button></div>`;
+  render();
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeOriginate(){
+  const amt=parseInt(document.getElementById('lendAmt').value)||0;
+  const term=parseInt(document.getElementById('lendTerm').value)||24;
+  if(amt<5000){toast('Minimum loan is $5,000','bad');return;}
+  if(G.cash<amt){toast('Not enough cash to lend','bad');return;}
+  const rate=.11+(term<=12?.02:term>=48?-.01:0);
+  const pmt=Math.round(mpmt(amt,rate,term));
+  G.cash-=amt; ledger('Loan originated',-amt);
+  G.holdings.push({id:++G.hidSeq, ac:'lending', addr:`${ri(100,9900)} ${pick(STREETS)}`,
+    borrowerName:`${pick(FNAMES)} ${pick(LNAMES)}`, balance:amt, originalBalance:amt,
+    rate, payment:pmt, termMonths:term, monthsPaid:0,
+    collateralValue:Math.round(amt*rnd(1.4,1.9)), defaultProb:.004, status:'active'});
+  evFeed(`Originated a ${fmt$(amt,true)} private loan at ${fmtPct(rate)} — ${fmt$(pmt,true)}/mo for ${term}mo`,'good');
+  closeModal(); toast('Loan funded!','good'); renderAll();
+}
+function openLienBrowse(){
+  const offers=[]; for(let i=0;i<4;i++){
+    const face=Math.round(rnd(1500,25000)/100)*100;
+    offers.push({addr:`${ri(100,9900)} ${pick(STREETS)}`, face, rate:rnd(.10,.18), termMonths:ri(6,24), collateralValue:Math.round(face*rnd(8,30)/1000)*1000});
+  }
+  window.__lienOffers=offers;
+  document.getElementById('modalBox').innerHTML=`<div class="x" onclick="closeModal()">×</div><h3>⚖️ Tax Lien Auction</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">Pay the lien face now; the owner usually redeems it later, paying you back with high statutory interest. If they don't (≈22%), you foreclose and get the deed — a property worth many times the lien.</div></div>
+    ${offers.map((o,i)=>`<div class="lender-row" style="cursor:default"><div class="lender-main"><div class="lender-name">${o.addr}</div><div class="lender-sub">${fmtPct(o.rate)} interest · ${o.termMonths}mo redemption · collateral ~${fmt$(o.collateralValue,true)}</div></div><div class="lender-right"><div class="lender-rate">${fmt$(o.face,true)}</div><button class="mbtn sm green" onclick="buyLien(${i})" style="margin-top:3px">Buy</button></div></div>`).join('')}
+    <button class="mbtn" onclick="closeModal()" style="margin-top:10px">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function buyLien(i){
+  const o=(window.__lienOffers||[])[i]; if(!o){toast('Lien no longer available','bad');return;}
+  if(G.cash<o.face){toast('Not enough cash','bad');return;}
+  G.cash-=o.face; ledger(`Tax lien purchased: ${o.addr}`,-o.face);
+  G.holdings.push({id:++G.hidSeq, ac:'lien', addr:o.addr, balance:o.face, accrued:0, rate:o.rate,
+    monthsLeft:o.termMonths, termMonths:o.termMonths, collateralValue:o.collateralValue, payment:0, status:'active'});
+  evFeed(`Bought tax lien on ${o.addr} for ${fmt$(o.face,true)} at ${fmtPct(o.rate)}`,'good');
+  closeModal(); toast('Lien purchased!','good'); renderAll();
+}
+
 function renderCareerStats(){
   const el=document.getElementById('careerStats');if(!el)return;
   const nw=netWorth();
@@ -3067,6 +3214,7 @@ function renderFin(){
   }
   renderLOCSection();
   renderNotesSection();
+  renderHoldings();
 }
 
 function renderLedger(){

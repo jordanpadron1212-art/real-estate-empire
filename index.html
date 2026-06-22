@@ -89,6 +89,12 @@ header{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:
 .sec h2{font-size:9.5px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;color:var(--txt-dim)}
 .sec .rule{flex:1;height:1px;background:var(--line)}
 .sec .act{font-family:var(--mono);font-size:9.5px;color:var(--accent-soft);cursor:pointer;letter-spacing:.5px}
+/* mobile progressive disclosure: dashboard section headers are tappable to collapse */
+#p-dash .sec{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#p-dash .sec::after{content:'▾';font-size:9px;color:var(--txt-dim);transition:transform .15s;margin-left:1px}
+#p-dash .sec.sec-collapsed::after{transform:rotate(-90deg)}
+/* cramped phone header: drop the redundant market badge (also shown in row 2) */
+@media (max-width:430px){ #hBadge{display:none} }
 
 /* ── KPI STRIP ────────────────────────────────── */
 .strip{display:flex;margin:0 12px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
@@ -443,6 +449,9 @@ body{font-size:13.5px}
 .hood-intel .hi-cell{border-right-color:var(--line)}
 .pstat-box{border-color:var(--line)}
 
+/* two-pane detail aside is desktop-only; hidden on phones (modals used instead) */
+.tp-detail{display:none}
+
 /* ══ DESKTOP / PC LAYOUT (≥960px) — mobile untouched below this width ══ */
 @media (min-width:960px){
   /* gradient backdrop behind a centered framed panel */
@@ -472,13 +481,41 @@ body{font-size:13.5px}
   #p-dash{column-count:2;column-gap:24px;padding:6px 0 10px}
   #p-dash > div{break-inside:avoid}
   #p-dash .sec{break-after:avoid;-webkit-column-break-after:avoid}
+  /* KPI band spans the full width as a header before the 2-column body */
+  #p-dash > .sec:first-of-type{column-span:all}
+  #p-dash > #dashStrip{column-span:all;margin-bottom:10px}
+  #p-dash > #dashStrip .cell{padding:12px 14px}
+  #p-dash > #dashStrip .val{font-size:20px}
+  /* collapse affordance is mobile-only; desktop sections are always expanded */
+  #p-dash .sec{cursor:default}
+  #p-dash .sec::after{display:none}
   /* card lists that render multiple sibling cards → 2 columns */
-  #portList,#loanList,#notesSection{column-count:2;column-gap:14px;padding:0 6px}
+  #loanList,#notesSection,#holdingsSection{column-count:2;column-gap:14px;padding:0 6px}
   .own-card,.loan-card,.note-card,.loc-card,.rule-card{break-inside:avoid;margin-left:6px;margin-right:6px}
-  /* single-card row tables (market, ledger) → rows flow into 2 columns */
-  #propList .card,#ledgerWrap .card{columns:2;column-gap:0}
-  #propList .row,#ledgerWrap .row{break-inside:avoid;border-bottom:1px solid var(--line)}
-  .watch-section{break-inside:avoid;column-span:all}
+  /* single-card row tables (ledger) → rows flow into 2 columns */
+  #ledgerWrap .card{columns:2;column-gap:0}
+  #ledgerWrap .row{break-inside:avoid;border-bottom:1px solid var(--line)}
+
+  /* ── TWO-PANE: list (left) + sticky detail (right) on Market & Portfolio ── */
+  .twopane{display:flex;gap:16px;align-items:flex-start}
+  .tp-list{flex:1;min-width:0}
+  .tp-detail{display:block;flex:0 0 360px;position:sticky;top:8px;align-self:flex-start;
+    max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line);
+    border-radius:8px;background:var(--surface);padding:14px}
+  .tp-detail .tp-empty{padding:46px 14px;text-align:center;color:var(--txt-dim);font-size:12px;line-height:1.6}
+  .tp-detail h3{margin:0 0 9px;font-size:15px}
+  .tp-detail .card{margin:0 0 10px}
+  /* compact selectable portfolio rows in the left pane */
+  .pt-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);
+    border-radius:8px;margin:0 6px 7px;cursor:pointer;background:var(--bg);transition:border-color .12s}
+  .pt-row:hover{border-color:var(--txt-dim)}
+  .pt-row.sel{border-color:var(--info);box-shadow:inset 0 0 0 1px var(--info)}
+  .pt-row .ptr-main{flex:1;min-width:0}
+  .pt-row .ptr-addr{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt-row .ptr-sub{font-size:10px;color:var(--txt-dim);margin-top:2px}
+  .pt-row .ptr-cf{font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+  /* selected market listing row highlight */
+  #propList .row.sel{box-shadow:inset 3px 0 0 var(--info);background:var(--surface)}
 
   /* overlays become centered desktop dialogs instead of bottom sheets */
   .modal-ov,.drawer-ov{align-items:center}
@@ -614,14 +651,20 @@ body{font-size:13.5px}
     <span class="segchip" data-f="Land" onclick="setMktF('Land',this)">Land</span>
     <span class="segchip" data-f="Development" onclick="setMktF('Development',this)">Development</span>
   </div>
-  <div id="propList"></div>
+  <div class="twopane">
+    <div class="tp-list"><div id="propList"></div></div>
+    <aside class="tp-detail" id="mktDetail"><div class="tp-empty">Select a listing on the left to see a full deal analysis here.</div></aside>
+  </div>
 </div>
 
 <!-- PORTFOLIO -->
 <div class="page" id="p-port">
   <div class="sec"><h2>My Portfolio</h2><div class="rule"></div></div>
   <div class="subnote" id="portNote">No properties owned yet. Buy your first deal in Market.</div>
-  <div id="portList"></div>
+  <div class="twopane">
+    <div class="tp-list" id="portList"></div>
+    <aside class="tp-detail" id="portDetail"><div class="tp-empty">Select a property on the left to see its details &amp; live P&amp;L here.</div></aside>
+  </div>
 </div>
 
 <!-- FINANCE -->
@@ -1993,7 +2036,10 @@ function renderHoodStrip(){
     const owned=G.portfolio.filter(p=>p.hood===k);
     const rented=owned.filter(p=>p.status==='rented');
     const mktListings=G.market.filter(p=>p.hood===k);
-    const avgCap=mktListings.length?mktListings.reduce((s,p)=>s+capRate({...p,marketVal:p.arv},p.ask),0)/mktListings.length:h.capBase;
+    // Cap-rate intel is a residential comp; non-resi assets (e.g. land with $0 rent)
+    // would distort the average through the residential capRate() formula.
+    const resiListings=mktListings.filter(p=>(p.ac||'resi')==='resi');
+    const avgCap=resiListings.length?resiListings.reduce((s,p)=>s+capRate({...p,marketVal:p.arv},p.ask),0)/resiListings.length:h.capBase;
     const tr=hoodTrendArrow(k);
     return`<div class="hi-cell">
       <div class="hi-letter" style="color:${clrs[k]}">${k}</div>
@@ -3163,7 +3209,7 @@ function assetDealRow(p){
        <div class="pstat"><div class="psl">${income?'Est. Value':'Income'}</div><div class="psv pos">${income?fmt$(p.arv,true):fmt$(p.monthlyRent,true)+'/mo'}</div></div>
        <div class="pstat"><div class="psl">${income?'Upside':'Cap Rate'}</div><div class="psv ${income?'pos':''}">${income?fmt$(Math.max(0,p.arv-p.ask),true):fmtPct(cap)}</div></div>
        <div class="pstat"><div class="psl">Class</div><div class="psv" style="font-size:10px">${cfg.cat||'Asset'}</div></div>`;
-  return`<div class="row" onclick="${buyFn}">
+  return`<div class="row" data-pid="${p.id}" onclick="mktRowClick(${p.id})">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
         <div class="rname">${cfg.icon} ${p.addr}</div>
@@ -3242,6 +3288,7 @@ function renderMarket(){
   renderNewsSection();
   if(!props.length){
     el.innerHTML=watchHtml+'<div class="subnote" style="padding:20px 12px;text-align:center;color:var(--txt-dim)">No listings match filter. Try "All" or hit Refresh.</div>';
+    if(isDesk()){ mktSelId=null; renderMktDetail(); }
     return;
   }
   // Update toolbar button costs
@@ -3262,7 +3309,7 @@ function renderMarket(){
     const actionBtn=auc
       ?`<button class="mbtn sm" style="margin-top:4px;background:rgba(245,197,24,.2);color:#f5c518;border-color:#f5c518" onclick="event.stopPropagation();openBidModal(${p.id})">Bid${auc.playerBid?` ✓`:''}</button>`
       :`<button class="mbtn sm pri" onclick="event.stopPropagation();openBuyModal(${p.id})" style="margin-top:4px">Offer</button>`;
-    return`<div class="row" onclick="${auc?`openBidModal(${p.id})`:`openPropModal(${p.id})`}">
+    return`<div class="row" data-pid="${p.id}" onclick="${auc?`openBidModal(${p.id})`:`mktRowClick(${p.id})`}">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
           <div class="rname">${p.addr}</div>
@@ -3286,6 +3333,82 @@ function renderMarket(){
       </div>
     </div>`;
   }).join('')}</div>`;
+  // Desktop two-pane: default-select the first listing and refresh the detail aside.
+  if(isDesk()){
+    if(mktSelId!=null && !props.some(p=>p.id===mktSelId)) mktSelId=null;
+    if(mktSelId==null && props.length) mktSelId=props[0].id;
+    renderMktDetail();
+  }
+}
+
+// Click handler for a market row: desktop docks detail; mobile opens the modal/buy flow.
+function mktRowClick(id){
+  const p=G.market.find(x=>x.id===id); if(!p) return;
+  if(isDesk()){ mktSelId=id; renderMktDetail(); return; }
+  if(p.ac&&p.ac!=='resi'){ (acCfg(p).dev?openDevBuy:openAssetBuy)(id); }
+  else openPropModal(id);
+}
+// Desktop docked detail aside for the selected market listing.
+function renderMktDetail(){
+  const el=document.getElementById('mktDetail'); if(!el) return;
+  if(mktSelId!=null && !G.market.some(p=>p.id===mktSelId)) mktSelId=null;
+  const p=G.market.find(x=>x.id===mktSelId);
+  if(!p){ el.innerHTML='<div class="tp-empty">Select a listing on the left to see a full deal analysis here.</div>'; }
+  else { el.innerHTML=mktDetailHTML(p); }
+  document.querySelectorAll('#propList .row').forEach(r=>r.classList.toggle('sel',+r.dataset.pid===mktSelId));
+}
+function mktDetailHTML(p){
+  const cfg=acCfg(p), isResi=(p.ac||'resi')==='resi';
+  const isWatched=G.watchlist.includes(p.id);
+  const hoodCls=p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg';
+  const watchBtn=`<button class="mbtn sm" onclick="toggleWatch(${p.id});renderMktDetail()">${isWatched?'★ Watching':'☆ Watch'}</button>`;
+  if(!isResi){
+    const buyFn=cfg.dev?`openDevBuy(${p.id})`:`openAssetBuy(${p.id})`;
+    const noiV=assetNOI({...p,marketVal:p.ask});
+    const cap=p.ask>0?(noiV*12)/p.ask:0;
+    const income=cfg.incomeModel==='none';
+    const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
+    return`<h3>${cfg.icon} ${p.addr}</h3>
+      <div style="margin-bottom:10px"><span class="badge info">${cfg.label}</span> <span class="badge ${hoodCls}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span></div>
+      <div class="dec" style="margin:0 0 10px"><div class="db">${cfg.desc||cfg.cat||'Specialty asset'}</div></div>
+      <div class="card" style="margin:0 0 10px">
+        <div class="frow"><span class="fl">Class</span><span class="fv">${cfg.cat||'Asset'}</span></div>
+        <div class="frow"><span class="fl">Size</span><span class="fv">${sub}</span></div>
+        <div class="frow"><span class="fl">${cfg.dev?'Acquisition':'Price'}</span><span class="fv warn">${fmt$(p.ask)}</span></div>
+        ${cfg.dev
+          ?`<div class="frow"><span class="fl">Build Budget</span><span class="fv warn">${fmt$(p.buildCost)} · ${p.buildWeeks}wk</span></div>
+            <div class="frow"><span class="fl">Finished Value</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+            <div class="frow tot"><span class="fl">Projected Profit</span><span class="fv ${p.arv-p.ask-(p.buildCost||0)>0?'pos':'neg'}">${fmt$(p.arv-p.ask-(p.buildCost||0))}</span></div>`
+          :income
+            ?`<div class="frow"><span class="fl">Est. Value</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+              <div class="frow tot"><span class="fl">Upside</span><span class="fv pos">${fmt$(Math.max(0,p.arv-p.ask))}</span></div>`
+            :`<div class="frow"><span class="fl">Income</span><span class="fv pos">${fmt$(p.monthlyRent)}/mo</span></div>
+              <div class="frow tot"><span class="fl">Cap Rate</span><span class="fv">${fmtPct(cap)}</span></div>`}
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap"><button class="mbtn green" onclick="${buyFn}">${cfg.dev?'Start Project →':'Buy →'}</button>${watchBtn}</div>`;
+  }
+  const cap=capRate({...p,marketVal:p.arv},p.ask), gm=grm(p.ask,p.monthlyRent), spread=p.arv-p.ask-p.rehabEst;
+  const auc=(G.auctions||[]).find(a=>a.propId===p.id&&a.status==='open');
+  const offerBtn=auc
+    ?`<button class="mbtn" style="background:rgba(245,197,24,.2);color:#f5c518;border-color:#f5c518" onclick="openBidModal(${p.id})">Place Bid →</button>`
+    :`<button class="mbtn green" onclick="openBuyModal(${p.id})">Make an Offer →</button>`;
+  return`<h3>${p.addr}</h3>
+    <div style="margin-bottom:10px"><span class="badge ${hoodCls}">${HOODS[p.hood].name} ${p.hood}</span> <span class="badge">${p.ptype}</span> <span class="badge ${cColor(p.cond)}">${COND_LBL[p.cond]}</span></div>
+    <div class="card" style="margin:0 0 10px">
+      <div class="frow"><span class="fl">Size</span><span class="fv">${p.sqft.toLocaleString()} sqft · ${p.beds}bd/${p.baths}ba · ${p.yr}</span></div>
+      <div class="frow"><span class="fl">Condition</span><span class="fv ${cColor(p.cond)}">${COND_DSC[p.cond]}</span></div>
+      <div class="frow"><span class="fl">${auc?'Start Bid':'Asking Price'}</span><span class="fv warn">${fmt$(auc?auc.startBid:p.ask)}</span></div>
+      <div class="frow"><span class="fl">ARV (After Repair)</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+      <div class="frow"><span class="fl">Rehab Estimate</span><span class="fv warn">${fmt$(p.rehabEst)} · ${REHAB_WKS[p.cond]} wks</span></div>
+      <div class="frow"><span class="fl">All-in Cost</span><span class="fv">${fmt$(p.ask+p.rehabEst)}</span></div>
+      <div class="frow"><span class="fl">Built-in Equity (ARV − all-in)</span><span class="fv ${spread>0?'pos':'neg'}">${fmt$(spread)}</span></div>
+      <div class="frow"><span class="fl">Monthly Rent (stabilized)</span><span class="fv">${fmt$(p.monthlyRent)}/mo</span></div>
+      <div class="frow"><span class="fl">Cap Rate</span><span class="fv">${fmtPct(cap)}</span></div>
+      <div class="frow tot"><span class="fl">Gross Rent Multiplier</span><span class="fv">${gm.toFixed(1)}×</span></div>
+    </div>
+    <div class="dec" style="margin:0 0 10px"><div class="dt">💡 Advisor Analysis</div>
+      <div class="db">${spread>20000?`Strong deal — ${fmt$(spread)} of built-in equity. BRRRR candidate: buy, rehab, rent, refi to pull capital back out.`:spread>5000?`Decent margin with ${fmt$(spread)} spread. Focus on cash flow after debt service.`:`Thin spread. Negotiate down or pass — target 20%+ below ARV + rehab.`}</div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">${offerBtn}${watchBtn}</div>`;
 }
 
 function renderPort(){
@@ -3293,15 +3416,44 @@ function renderPort(){
   const note=document.getElementById('portNote');
   if(!G.portfolio.length){
     note.textContent='No properties owned yet. Buy your first deal in Market.';
-    el.innerHTML='';return;
+    el.innerHTML='';
+    if(isDesk()) renderPortDetail();
+    return;
   }
   note.textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · Net Worth ${fmt$(netWorth())} · Monthly CF ${fmtCF(portCF())}`;
+  if(isDesk()){
+    // Two-pane: compact selectable rows on the left, rich detail + live P&L on the right.
+    el.innerHTML=G.portfolio.map(portCompactRow).join('');
+    renderPortDetail();
+    return;
+  }
+  el.innerHTML=G.portfolio.map(p=>(p.ac&&p.ac!=='resi')?assetOwnCard(p):propOwnCard(p)).join('');
+}
+// Compact one-line portfolio row for the desktop two-pane list.
+function portCompactRow(p){
+  const cfg=acCfg(p), isResi=(p.ac||'resi')==='resi';
+  const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info',held:'info'};
+  const building=p.status==='rehab';
+  const cf=p.status==='rented'?(assetNOI(p)-propPayment(p))*myShare(p)
+    :(!isResi&&cfg.expenseModel==='holding-cost'&&!building?assetNOI(p)*myShare(p):0);
+  const sub=(isResi?(p.ptype||'SFR'):cfg.label)+' · '+(HOODS[p.hood]?HOODS[p.hood].name:'—');
+  return`<div class="pt-row${p.id===portSelId?' sel':''}" data-pid="${p.id}" onclick="selectPort(${p.id})">
+    <div class="ptr-main">
+      <div class="ptr-addr">${isResi?'':cfg.icon+' '}${p.addr}</div>
+      <div class="ptr-sub">${sub}</div>
+    </div>
+    <div>
+      <div class="ptr-cf ${cf>=0?'pos':'neg'}">${building?'🏗️':fmtCF(Math.round(cf))}</div>
+      <div style="text-align:right;margin-top:3px"><span class="badge ${scMap[p.status]||''}" style="font-size:8.5px">${building?'BUILDING':(p.status||'').toUpperCase()}</span></div>
+    </div>
+  </div>`;
+}
+// Residential owned card (shared by the mobile list and the desktop detail pane).
+function propOwnCard(p){
   const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info'};
-  el.innerHTML=G.portfolio.map(p=>{
-    if(p.ac&&p.ac!=='resi') return assetOwnCard(p);
-    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(assetNOI(p)-propPayment(p))*myShare(p):0;
-    const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
-    return`<div class="own-card">
+  const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(assetNOI(p)-propPayment(p))*myShare(p):0;
+  const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
+  return`<div class="own-card">
       <div class="own-head">
         <div><div class="own-addr">${p.addr}</div><div class="own-sub">${p.ptype} · ${HOODS[p.hood].name} · ${p.yr} ${leaseChip(p)}</div></div>
         <div style="display:flex;gap:4px;align-items:center">
@@ -3325,7 +3477,6 @@ function renderPort(){
         <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
       </div>
     </div>`;
-  }).join('');
 }
 
 function renderFin(){
@@ -4025,10 +4176,27 @@ function setRuleParam(type,paramId,value){
 
 // ── PER-PROPERTY P&L MODAL ───────────────────────────
 let liveModal=null; // re-rendered each tick so open data-modals (P&L) stay live
+let mktSelId=null, portSelId=null; // currently-selected listing / property in the two-pane views
+function isDesk(){return window.matchMedia('(min-width:960px)').matches;}
 function openPropAnalytics(id){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  // On desktop the Portfolio P&L lives in the docked detail pane, not a modal.
+  if(isDesk()&&G.activeTab==='port'){ portSelId=id; renderPortDetail(); return; }
   // keep this P&L live as weeks advance
   liveModal=()=>{ if(G.portfolio.some(x=>x.id===id)) openPropAnalytics(id); else { liveModal=null; closeModal(); } };
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>P&L: ${p.addr}</h3>
+    ${analyticsInner(p)}
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="mbtn warn" ${p.appealYear===G.year?'disabled':''} onclick="fileAppeal(${id});closeModal();openPropAnalytics(${id})">${p.appealYear===G.year?'Appealed this year':'Appeal Tax Assessment'}</button>
+      <button class="mbtn" onclick="closeModal()">Close</button>
+    </div>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+// Shared P&L body (badges + income statement + metrics) for the modal and the
+// desktop docked detail pane. Returns HTML only — callers supply the action row.
+function analyticsInner(p){
   const cfg=acCfg(p), isResi=(p.ac||'resi')==='resi';
   const l=activeLoan(p);
   const gross=p.monthlyRent||0;
@@ -4078,9 +4246,7 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Vacancy / Reserve</span><span class="fv neg">−${fmt$(Math.round(gross-noiVal-debtSvc>0?gross-noiVal:gross*0.1),true)}</span></div>
       <div class="frow" style="font-size:10.5px;color:var(--txt-dim)"><span class="fl">${cfg.expenseModel==='nnn-passthrough'?'Tenant pays tax / insurance / maintenance (NNN)':'Operating expenses'}</span><span class="fv"></span></div>`;
   }
-  document.getElementById('modalBox').innerHTML=`
-    <div class="x" onclick="closeModal()">×</div>
-    <h3>P&L: ${p.addr}</h3>
+  return `
     <div style="margin-bottom:10px">
       <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span>
       <span class="badge">${isResi?(p.ptype||'SFR'):cfg.label}</span>
@@ -4109,13 +4275,22 @@ function openPropAnalytics(id){
       <div class="frow"><span class="fl">Current Market Value</span><span class="fv">${fmt$(p.marketVal)}</span></div>
       <div class="frow"><span class="fl">Unrealized Gain</span><span class="fv ${unrealizedGain>=0?'pos':'neg'}">${fmt$(unrealizedGain)}</span></div>
       <div class="frow tot"><span class="fl">Est. Annual Total Return</span><span class="fv ${totalReturn>=.12?'pos':totalReturn>=.06?'warn':'neg'}">${fmtPct(totalReturn)} <span style="font-size:10px;font-weight:400;color:var(--txt-dim)">(CF + appreciation)</span></span></div>
-    </div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="mbtn warn" ${p.appealYear===G.year?'disabled':''} onclick="fileAppeal(${id});closeModal();openPropAnalytics(${id})">${p.appealYear===G.year?'Appealed this year':'Appeal Tax Assessment'}</button>
-      <button class="mbtn" onclick="closeModal()">Close</button>
     </div>`;
-  document.getElementById('modalOv').classList.remove('hide');
 }
+// Desktop Portfolio detail pane: full owned card + live P&L for the selected property.
+function renderPortDetail(){
+  const el=document.getElementById('portDetail'); if(!el) return;
+  if(portSelId!=null && !G.portfolio.some(p=>p.id===portSelId)) portSelId=null;
+  if(portSelId==null && G.portfolio.length) portSelId=G.portfolio[0].id;
+  const p=G.portfolio.find(x=>x.id===portSelId);
+  if(!p){ el.innerHTML='<div class="tp-empty">Select a property on the left to see its details &amp; live P&amp;L here.</div>'; return; }
+  const card=(p.ac&&p.ac!=='resi')?assetOwnCard(p):propOwnCard(p);
+  el.innerHTML=`${card}${analyticsInner(p)}`;
+  // reflect selection in the left list
+  document.querySelectorAll('#portList .pt-row').forEach(r=>r.classList.toggle('sel',+r.dataset.pid===portSelId));
+}
+function selectPort(id){ portSelId=id; renderPortDetail();
+  document.querySelectorAll('#portList .pt-row').forEach(r=>r.classList.toggle('sel',+r.dataset.pid===id)); }
 function startRehab(id){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
   if(G.cash<p.rehabEst){toast(`Need ${fmt$(p.rehabEst-G.cash,true)} more for rehab`,'bad');return;}
@@ -4270,9 +4445,23 @@ function launchApp(){
   document.getElementById('app').style.display='';
   renderAll();
 }
+// Mobile progressive disclosure: tap a dashboard section header to collapse it.
+// No-op on desktop (sections are laid out side-by-side with room to spare).
+function initDashCollapse(){
+  const dash=document.getElementById('p-dash'); if(!dash||dash._collapseBound) return;
+  dash._collapseBound=true;
+  dash.addEventListener('click',e=>{
+    if(isDesk()) return;
+    const sec=e.target.closest('.sec'); if(!sec||sec.parentElement!==dash) return;
+    const collapsed=sec.classList.toggle('sec-collapsed');
+    let n=sec.nextElementSibling;
+    while(n&&!n.classList.contains('sec')){ n.style.display=collapsed?'none':''; n=n.nextElementSibling; }
+  });
+}
 // Check for save on page load
 window.addEventListener('DOMContentLoaded',()=>{
   if(hasSave()) document.getElementById('loadBtn').style.display='';
+  initDashCollapse();
 });
 
 // ── TOAST ───────────────────────────────────────────

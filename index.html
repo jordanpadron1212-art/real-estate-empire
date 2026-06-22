@@ -609,9 +609,9 @@ body{font-size:13.5px}
   <div id="newsSection"></div>
   <div class="srcfilter" id="mktFilter">
     <span class="segchip on" data-f="all" onclick="setMktF('all',this)">All</span>
-    <span class="segchip" data-f="SFR" onclick="setMktF('SFR',this)">SFR</span>
-    <span class="segchip" data-f="Duplex" onclick="setMktF('Duplex',this)">Duplex</span>
-    <span class="segchip" data-f="4-Plex" onclick="setMktF('4-Plex',this)">4-Plex</span>
+    <span class="segchip" data-f="Residential" onclick="setMktF('Residential',this)">Residential</span>
+    <span class="segchip" data-f="Commercial" onclick="setMktF('Commercial',this)">Commercial</span>
+    <span class="segchip" data-f="Land" onclick="setMktF('Land',this)">Land</span>
   </div>
   <div id="propList"></div>
 </div>
@@ -843,6 +843,44 @@ const ASSET_CLASSES = {
     states:['market','vacant','rehab','rented','listed'],
     risk:.07,
   },
+  // ── P1: lighter physical classes (config-driven over the resi pipeline) ──
+  land:{key:'land',label:'Raw Land',icon:'🌄',cat:'Land',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'none',expenseModel:'holding-cost',appreciation:'fixed',apprFixed:.07,valuation:'comp',
+    financing:['cash','priv'],states:['market','held','listed'],initialState:'held',risk:.02,
+    generate:()=>{ const hk=pickHood(); const acres=+rnd(.3,15).toFixed(1);
+      const ppa={A:rnd(60000,140000),B:rnd(20000,55000),C:rnd(8000,22000),D:rnd(3000,10000)}[hk];
+      const ask=Math.max(5000,Math.round(acres*ppa/1000)*1000);
+      return baseAsset('land',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} ${pick(['Parcel','Lot','Tract','Acreage'])}`,
+        acres, sqft:Math.round(acres*43560), ask, arv:Math.round(ask*rnd(1.1,1.6)/1000)*1000, monthlyRent:0,
+        carry:Math.round(ask*.0015), vacRate:0}); } },
+  storage:{key:'storage',label:'Self-Storage',icon:'📦',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'rent',expenseModel:'full',appreciation:'hood',valuation:'comp',
+    financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.05,
+    generate:()=>{ const hk=pickHood(); const units=ri(50,260); const sqft=units*ri(70,110);
+      const ask=Math.round(units*rnd(3500,7500)/1000)*1000;
+      const monthlyRent=Math.round(units*rnd(45,105)*rnd(.78,.93)/25)*25;
+      return baseAsset('storage',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} Self-Storage`, units, sqft, ask, arv:ask, monthlyRent, vacRate:.10}); } },
+  mobile:{key:'mobile',label:'Mobile Home Park',icon:'🏕️',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'rent',expenseModel:'nnn-passthrough',appreciation:'hood',valuation:'comp',
+    financing:['cash','dscr','conv','priv'],states:['market','rented','listed'],initialState:'rented',risk:.05,
+    generate:()=>{ const hk=pick(['B','C','C','D','D']); const lots=ri(20,120); const sqft=lots*400;
+      const ask=Math.round(lots*rnd(12000,28000)/1000)*1000;
+      const monthlyRent=Math.round(lots*rnd(280,520)*rnd(.85,.96)/25)*25;
+      return baseAsset('mobile',hk,{addr:`${pick(['Sunny','Shady','Lakeside','Pinewood','Hillcrest'])} ${pick(['Acres','Estates','Village','Park'])}`, units:lots, sqft, ask, arv:ask, monthlyRent, vacRate:.06}); } },
+  parking:{key:'parking',label:'Parking Lot',icon:'🅿️',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'rent',expenseModel:'nnn-passthrough',appreciation:'hood',valuation:'comp',
+    financing:['cash','conv'],states:['market','rented','listed'],initialState:'rented',risk:.03,
+    generate:()=>{ const hk=pick(['A','A','B','B','C']); const spaces=ri(15,120); const sqft=spaces*300;
+      const ask=Math.round(spaces*rnd(6000,18000)/1000)*1000;
+      const monthlyRent=Math.round(spaces*rnd(60,180)*rnd(.7,.92)/25)*25;
+      return baseAsset('parking',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} Parking`, units:spaces, sqft, ask, arv:ask, monthlyRent, vacRate:.08}); } },
+  farm:{key:'farm',label:'Farmland',icon:'🌾',cat:'Land',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'rent',expenseModel:'nnn-passthrough',appreciation:'fixed',apprFixed:.05,valuation:'comp',
+    financing:['cash','conv','priv'],states:['market','rented','listed'],initialState:'rented',risk:.03,
+    generate:()=>{ const hk=pick(['C','D','D']); const acres=ri(40,800); const sqft=Math.round(acres*43560);
+      const ask=Math.round(acres*rnd(3500,9000)/1000)*1000;
+      const monthlyRent=Math.round(acres*rnd(150,350)/12/25)*25;
+      return baseAsset('farm',hk,{addr:`${ri(100,9900)} ${pick(['County Rd','Rural Rte','Farm Rd'])} ${ri(1,40)}`, acres, sqft, ask, arv:Math.round(ask*rnd(1.05,1.3)/1000)*1000, monthlyRent, vacRate:.02}); } },
 };
 function acCfg(o){return ASSET_CLASSES[(o&&o.ac)||'resi']||ASSET_CLASSES.resi;}
 function finite(x){return Number.isFinite(x)?x:0;}
@@ -865,6 +903,15 @@ function assetValue(p){
     case 'caprate':{ const cr=p.capRate|| (G.capRates&&G.capRates[p.ac]) || .07; return cr>0?(assetNOI(p)*12)/cr:(p.marketVal||0); }
     case 'face': return (p.balance||0)+(p.accrued||0);
     case 'nav': return p.nav!=null?p.nav:(p.committed||p.balance||0);
+  }
+}
+// Annual appreciation rate for a physical asset, class-aware.
+function apprRate(p){
+  const cfg=acCfg(p), cyc=(1+(G.mktCycle-50)/100);
+  switch(cfg.appreciation){
+    case 'hood': default: return (HOODS[p.hood]?HOODS[p.hood].appreci:.03)*cyc;
+    case 'fixed': return (cfg.apprFixed!=null?cfg.apprFixed:.05)*(1+(G.mktCycle-50)/200); // less cycle-sensitive
+    case 'none': case 'nav': return 0;
   }
 }
 // Total value of financial holdings (lending/liens/syndications/crowdfunding).
@@ -1004,15 +1051,32 @@ function genProp(forceHood, forceCond){
     mgmtPct:0,hoa:0,listPrice:0,listWeeks:0,tenant:null,
   };
 }
+// Common skeleton for non-residential physical assets.
+function baseAsset(ac,hk,extra){
+  return Object.assign({
+    id:++G.pidSeq, ac, hood:hk, status:'market', wom:0,
+    sellerName:`${pick(FNAMES)} ${pick(LNAMES)}`,
+    marketVal:0, purchasePrice:0, cashInvested:0,
+    monthlyRent:0, vacRate:.06, sqft:1000,
+    rehabEst:0, rehabWeeksLeft:0, rehabWksTotal:0, rehabCost:0,
+    mgmtPct:0, hoa:0, listPrice:0, listWeeks:0, tenant:null, ask:0, arv:0
+  }, extra);
+}
 // Generic asset generator — dispatches to a class builder; resi uses genProp.
 function genAsset(ac,seed){
   const cfg=ASSET_CLASSES[ac]||ASSET_CLASSES.resi;
   if(typeof cfg.generate==='function') return cfg.generate(seed);
-  const p=genProp(); p.ac=ac; return p; // P0: only resi; later classes provide cfg.generate
+  const p=genProp(); p.ac=ac; return p;
 }
 function genMarket(n){
   const ct=Math.round(n*(G.mMod.df||1));
   for(let i=0;i<ct;i++) G.market.push(genProp());
+  // sprinkle alternative asset classes for variety
+  const altKeys=Object.keys(ASSET_CLASSES).filter(k=>k!=='resi'&&ASSET_CLASSES[k].surface==='market'&&typeof ASSET_CLASSES[k].generate==='function');
+  if(altKeys.length){
+    const altCt=Math.max(1,Math.round(ct*.45));
+    for(let i=0;i<altCt;i++){ if(Math.random()<.75) G.market.push(genAsset(pick(altKeys))); }
+  }
 }
 
 // ── TIME SYSTEM ────────────────────────────────────
@@ -1043,8 +1107,8 @@ function tick(){
     }
     // Weekly market value — steady appreciation trend (hood + cycle) plus small noise,
     // so values visibly evolve every week instead of jumping once a year.
-    if(p.status!=='market'&&p.marketVal>0){
-      const weeklyAppr=HOODS[p.hood].appreci*(1+(G.mktCycle-50)/100)/52;
+    if(p.status!=='market'&&p.marketVal>0&&acCfg(p).valuation==='comp'){
+      const weeklyAppr=apprRate(p)/52;
       p.marketVal=Math.round(p.marketVal*(1+weeklyAppr+(Math.random()-.5)*.0006));
     }
   });
@@ -1214,10 +1278,11 @@ function monthlyTick(){
   const txMod=hasBook?.88:1; // noi() already applies G.taxMod; txMod is bookkeeper discount only
 
   G.portfolio.forEach(p=>{
+    const isResi=(p.ac||'resi')==='resi';
     if(p.status==='rented'){
       const managed=hasPM||regionalActive(p.hood); // PM or Regional Manager auto-fills
-      // ── Vacancy event ──
-      const vacHit=Math.random()<(p.vacRate||HOODS[p.hood].vacBase);
+      // ── Vacancy event (residential single-tenant churn only) ──
+      const vacHit=isResi&&Math.random()<(p.vacRate||HOODS[p.hood].vacBase);
       if(vacHit){
         if(managed){
           evFeed(`Short vacancy at ${p.addr} — ${hasPM?'PM':'Regional Mgr'} filling unit.`,'warn');
@@ -1226,9 +1291,9 @@ function monthlyTick(){
           p.status='vacant';p.tenant=null;
         }
       }
-      // ── Net cash flow (operator keeps their share on partner deals) ──
+      // ── Net cash flow (class-aware NOI; operator keeps their share on partner deals) ──
       if(p.status==='rented'){
-        const noiVal=noi(p)*txMod*myShare(p);
+        const noiVal=assetNOI(p)*(isResi?txMod:1)*myShare(p);
         G.cash+=noiVal;
         ledger(`Net CF: ${p.addr}`,noiVal);
       }
@@ -1245,8 +1310,8 @@ function monthlyTick(){
         evFeed(`${lbl} at ${p.addr}: −${fmt$(amt,true)}${src}`,'warn');
         ledger(`${lbl}: ${p.addr}`,-fromCash);
       }
-      // ── Tenant events ──
-      if(p.status==='rented'){
+      // ── Tenant events (residential only) ──
+      if(p.status==='rented'&&isResi){
         const lateProb=p.latePayProb||0.05;
         const renewalRej=p.tenantTier==='A'?.08:p.tenantTier==='C'?.18:.13;
         const moveoutProb=p.tenantTier==='A'?.01:p.tenantTier==='C'?.05:.03;
@@ -1278,6 +1343,10 @@ function monthlyTick(){
           evFeed(`Rent raised at ${p.addr}: +${fmt$(bump,true)}/mo`,'good');
         }
       }
+    } else if(!isResi&&acCfg(p).expenseModel==='holding-cost'&&p.status!=='market'){
+      // Non-income physical (land): pay monthly holding cost (negative carry)
+      const carry=assetNOI(p)*myShare(p);
+      G.cash+=carry; ledger(`Holding cost: ${p.addr}`,carry);
     }
     if(p.status==='listed') p.listWeeks=(p.listWeeks||0)+1;
   });
@@ -2777,10 +2846,74 @@ function mkMktRow(lbl,v,lo,hi,disp){
   return`<div class="mkt-row"><div class="mkt-lbl">${lbl}</div><div class="mkt-track"><div class="mkt-fill" style="width:${pct}%;background:${clr}"></div></div><div class="mkt-val">${disp}</div></div>`;
 }
 
+// Class-aware market listing row for non-residential assets.
+function assetDealRow(p){
+  const cfg=acCfg(p);
+  const isWatched=G.watchlist.includes(p.id);
+  const staleCls=p.wom>7?'tag-neg':p.wom>4?'tag-warn':'tag-pos';
+  const staleLabel=p.wom>7?p.wom+'wk old':p.wom>4?p.wom+'wk':'New';
+  const noiV=assetNOI({...p,marketVal:p.ask});
+  const cap=p.ask>0?(noiV*12)/p.ask:0;
+  const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
+  const income=cfg.incomeModel==='none';
+  return`<div class="row" onclick="openAssetBuy(${p.id})">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        <div class="rname">${cfg.icon} ${p.addr}</div>
+        <button class="star-btn${isWatched?' on':''}" onclick="event.stopPropagation();toggleWatch(${p.id})">${isWatched?'★':'☆'}</button>
+        <span class="rtag tag-info">${cfg.label}</span>
+      </div>
+      <div class="rdetail">${sub} · <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span></div>
+      <div class="pstat-box">
+        <div class="pstat"><div class="psl">Price</div><div class="psv warn">${fmt$(p.ask,true)}</div></div>
+        <div class="pstat"><div class="psl">${income?'Est. Value':'Income'}</div><div class="psv pos">${income?fmt$(p.arv,true):fmt$(p.monthlyRent,true)+'/mo'}</div></div>
+        <div class="pstat"><div class="psl">${income?'Upside':'Cap Rate'}</div><div class="psv ${income?'pos':''}">${income?fmt$(Math.max(0,p.arv-p.ask),true):fmtPct(cap)}</div></div>
+        <div class="pstat"><div class="psl">Class</div><div class="psv" style="font-size:10px">${cfg.cat||'Asset'}</div></div>
+      </div>
+    </div>
+    <div class="rright">
+      <div class="rprice warn">${fmt$(p.ask,true)}</div>
+      <span class="rtag ${staleCls}">${staleLabel}</span>
+      <button class="mbtn sm pri" onclick="event.stopPropagation();openAssetBuy(${p.id})" style="margin-top:4px">Buy</button>
+    </div>
+  </div>`;
+}
+// Class-aware owned card for non-residential assets.
+function assetOwnCard(p){
+  const cfg=acCfg(p), l=activeLoan(p), eq=equity(p);
+  const cf=(p.status==='rented')?(assetNOI(p)-propPayment(p))*myShare(p):(cfg.expenseModel==='holding-cost'?assetNOI(p)*myShare(p):0);
+  const scMap={held:'info',rented:'pos',listed:'info',vacant:'neg'};
+  const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
+  return`<div class="own-card">
+    <div class="own-head">
+      <div><div class="own-addr">${cfg.icon} ${p.addr}</div><div class="own-sub">${cfg.label} · ${sub} · ${HOODS[p.hood]?HOODS[p.hood].name:'—'}</div></div>
+      <span class="badge ${scMap[p.status]||''}">${(p.status||'').toUpperCase()}</span>
+    </div>
+    <div class="own-stats">
+      <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
+      <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(propDebt(p),true):'No loan'}</div></div>
+      <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${fmtCF(Math.round(cf))}</div><div class="od">${cfg.incomeModel==='none'?'Land hold':fmt$(p.monthlyRent,true)+' income'}</div></div>
+    </div>
+    <div class="own-acts">
+      ${p.status==='listed'
+        ? `<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks||0}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`
+        : `<button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button>${l?'':''}`}
+      <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
+    </div>
+  </div>`;
+}
 function renderMarket(){
   const el=document.getElementById('propList');
   let props=G.market;
-  if(G.mktFilter!=='all') props=props.filter(p=>p.ptype===G.mktFilter);
+  if(G.mktFilter!=='all'){
+    props=props.filter(p=>{
+      const cfg=acCfg(p);
+      if(G.mktFilter==='Residential') return (p.ac||'resi')==='resi';
+      if(G.mktFilter==='Commercial') return cfg.cat==='Commercial';
+      if(G.mktFilter==='Land') return cfg.cat==='Land';
+      return p.ptype===G.mktFilter; // legacy SFR/Duplex/4-Plex
+    });
+  }
 
   // Watchlist section
   const watched=G.market.filter(p=>G.watchlist.includes(p.id));
@@ -2788,10 +2921,12 @@ function renderMarket(){
     <div class="watch-head">★ Watchlist (${watched.length})</div>
     <div class="card" style="border:none;margin:0;border-radius:0">${watched.map(p=>{
       const spread=p.arv-p.ask-p.rehabEst;
-      return`<div class="row" onclick="openPropModal(${p.id})" style="padding:8px 12px">
+      const isAsset=p.ac&&p.ac!=='resi';
+      const buyFn=isAsset?`openAssetBuy(${p.id})`:`openBuyModal(${p.id})`;
+      return`<div class="row" onclick="${isAsset?buyFn:`openPropModal(${p.id})`}" style="padding:8px 12px">
         <div><div class="rname" style="font-size:12px">${p.addr}</div>
         <div style="font-size:10px;color:var(--txt-dim);margin-top:2px">${fmt$(p.ask,true)} ask · ARV ${fmt$(p.arv,true)} · Spread <span class="${spread>0?'pos':'neg'}">${fmt$(spread,true)}</span></div></div>
-        <button class="mbtn sm pri" onclick="event.stopPropagation();openBuyModal(${p.id})">Offer</button>
+        <button class="mbtn sm pri" onclick="event.stopPropagation();${buyFn}">${isAsset?'Buy':'Offer'}</button>
       </div>`;
     }).join('')}</div>
   </div>`:'';
@@ -2805,6 +2940,7 @@ function renderMarket(){
   const btnW=document.getElementById('btnWholesale');
   if(btnW){const hasR=G.team.some(t=>t.type==='realtor');btnW.textContent=`Source Deal (${hasR?'$500':'$1,500'})`;}
   el.innerHTML=watchHtml+`<div class="card">${props.map(p=>{
+    if(p.ac&&p.ac!=='resi') return assetDealRow(p);
     const cap=capRate({...p,marketVal:p.arv},p.ask);
     const gm=grm(p.ask,p.monthlyRent);
     const spread=p.arv-p.ask-p.rehabEst;
@@ -2854,7 +2990,8 @@ function renderPort(){
   note.textContent=`${G.portfolio.length} propert${G.portfolio.length===1?'y':'ies'} · Net Worth ${fmt$(netWorth())} · Monthly CF ${fmtCF(portCF())}`;
   const scMap={vacant:'neg',rented:'pos',rehab:'warn',listed:'info',pending:'info'};
   el.innerHTML=G.portfolio.map(p=>{
-    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(noi(p)-propPayment(p))*myShare(p):0;
+    if(p.ac&&p.ac!=='resi') return assetOwnCard(p);
+    const l=activeLoan(p),eq=equity(p),cf=p.status==='rented'?(assetNOI(p)-propPayment(p))*myShare(p):0;
     const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):100;
     return`<div class="own-card">
       <div class="own-head">
@@ -2972,6 +3109,89 @@ function openPropModal(id){
       <div class="dbtns"><button class="mbtn green" onclick="closeModal();openBuyModal(${p.id})">Make an Offer →</button><button class="mbtn" onclick="closeModal()">Pass</button></div>
     </div>`;
   document.getElementById('modalOv').classList.remove('hide');
+}
+
+// ── Simple buy flow for non-residential physical assets (land/storage/etc.) ──
+function openAssetBuy(id){
+  const p=G.market.find(x=>x.id===id);
+  if(!p){toast('Deal no longer available','bad');return;}
+  const cfg=acCfg(p);
+  let selLoan=cfg.financing[0]||'cash';
+  const render=()=>{
+    const lo=LOANS[selLoan]||LOANS.cash;
+    const down=Math.round(p.ask*lo.down), principal=p.ask-down;
+    const closing=Math.round(p.ask*.02), pts=Math.round(principal*lo.points);
+    const totalCash=down+closing+pts;
+    const noiV=assetNOI({...p,marketVal:p.ask});
+    const pmt=lo.intOnly?ioPmt(principal,lo.rate):(lo.term?mpmt(principal,lo.rate,lo.term):0);
+    const cf=noiV-pmt;
+    const canAfford=G.cash>=totalCash;
+    const incomeRow=cfg.incomeModel==='none'
+      ? `<div class="frow"><span class="fl">Annual Holding Cost</span><span class="fv neg">${fmt$(Math.round(noiV*12))}/yr</span></div>`
+      : `<div class="frow"><span class="fl">Monthly NOI</span><span class="fv ${noiV>=0?'pos':'neg'}">${fmtCF(Math.round(noiV))}/mo</span></div>
+         <div class="frow"><span class="fl">Net Cash Flow (after debt)</span><span class="fv ${cf>=0?'pos':'neg'}">${fmtCF(Math.round(cf))}/mo</span></div>`;
+    document.getElementById('assetBuyBody').innerHTML=`
+      <div class="sec" style="padding:6px 0 5px"><h2>Financing</h2><div class="rule"></div></div>
+      <div class="lender-list">
+        ${cfg.financing.map(k=>{const l=LOANS[k];const tc=Math.round(p.ask*l.down)+Math.round(p.ask*.02)+Math.round((p.ask-Math.round(p.ask*l.down))*l.points);
+          return`<div class="lender-row${selLoan===k?' sel':''}" onclick="selAssetLoan('${k}')">
+            <div class="lender-main"><div class="lender-name">${l.name}</div><div class="lender-sub">${l.down*100}% down${l.term?' · '+l.term+'mo':''}</div></div>
+            <div class="lender-right"><div class="lender-rate">${l.rate>0?fmtPct(l.rate):'0%'}</div><div class="lender-note">${fmt$(tc,true)} cash</div></div>
+          </div>`;}).join('')}
+      </div>
+      <div class="card" style="margin:10px 0 0">
+        <div class="frow"><span class="fl">Price</span><span class="fv warn">${fmt$(p.ask)}</span></div>
+        <div class="frow"><span class="fl">Down (${(lo.down*100)}%)</span><span class="fv">${fmt$(down)}</span></div>
+        <div class="frow"><span class="fl">Closing (~2%)</span><span class="fv">${fmt$(closing)}</span></div>
+        ${pts?`<div class="frow"><span class="fl">Points</span><span class="fv">${fmt$(pts)}</span></div>`:''}
+        <div class="frow tot"><span class="fl">Cash Needed</span><span class="fv ${canAfford?'pos':'neg'}">${fmt$(totalCash)}</span></div>
+        <div class="frow"><span class="fl">Your Cash</span><span class="fv">${fmt$(G.cash)}</span></div>
+        ${selLoan!=='cash'?`<div class="frow"><span class="fl">Loan / Payment</span><span class="fv">${fmt$(principal,true)} · ${fmt$(pmt,true)}/mo</span></div>`:''}
+        ${incomeRow}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:7px">
+        <button class="mbtn green" ${canAfford?'':'disabled'} onclick="executeAssetBuy(${p.id},'${selLoan}')">Buy for ${fmt$(p.ask,true)} →</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+      ${!canAfford?`<div class="subnote" style="padding:6px 0;color:var(--neg)">⚠ Need ${fmt$(totalCash-G.cash)} more cash.</div>`:''}`;
+  };
+  window.selAssetLoan=(k)=>{selLoan=k;render();};
+  const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>${cfg.icon} ${p.addr}</h3>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+      <span class="badge info">${cfg.label}</span>
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span>
+      <span class="badge">${sub}</span>
+    </div>
+    <div id="assetBuyBody"></div>`;
+  render();
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeAssetBuy(id, loanType){
+  const p=G.market.find(x=>x.id===id);
+  if(!p){toast('Deal no longer available','bad');return;}
+  const cfg=acCfg(p), price=p.ask, lo=LOANS[loanType]||LOANS.cash;
+  const down=Math.round(price*lo.down), principal=price-down;
+  const closing=Math.round(price*.02), pts=Math.round(principal*lo.points);
+  const totalCash=down+closing+pts;
+  if(G.cash<totalCash){toast('Not enough cash!','bad');return;}
+  G.cash-=totalCash; p.cashInvested=totalCash; p.purchasePrice=price; p.marketVal=price;
+  ledger(`Purchased: ${p.addr}`,-totalCash);
+  if(loanType!=='cash'&&lo.term){
+    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
+    G.loans.push({id:++G.lidSeq,propId:p.id,type:loanType,name:`${lo.name} — ${p.addr.split(' ').slice(0,2).join(' ')}`,rate:lo.rate,termMonths:lo.term,balance:principal,payment:pmt,points:pts,intOnly:lo.intOnly,monthsPaid:0,status:'active'});
+  }
+  p.status=cfg.initialState||'held';
+  if(cfg.incomeModel!=='none') p.tenant='Operating';
+  G.market=G.market.filter(x=>x.id!==id);
+  G.portfolio.push(p);
+  if(G.yearStats) G.yearStats.acquired=(G.yearStats.acquired||0)+1;
+  G.lifetimeAcquired=(G.lifetimeAcquired||0)+1;
+  evFeed(`Acquired ${cfg.label}: ${p.addr} for ${fmt$(price,1)}`,'good');
+  checkAchievements(); closeModal(); toast(`Bought ${p.addr}!`,'good');
+  go('port',document.querySelector('.nav .tab[data-tab="port"]'));
 }
 
 function openBuyModal(id){
@@ -3291,7 +3511,9 @@ function executeList(id){
 
 function delistProp(id){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
-  p.status=p.tenant?'rented':'vacant';p.listPrice=0;p.listWeeks=0;p.sellerFinance=false;
+  const cfg=acCfg(p);
+  p.status=(p.ac&&p.ac!=='resi')?(cfg.initialState||'held'):(p.tenant?'rented':'vacant');
+  p.listPrice=0;p.listWeeks=0;p.sellerFinance=false;
   toast('Delisted','warn');renderAll();
 }
 

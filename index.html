@@ -612,6 +612,7 @@ body{font-size:13.5px}
     <span class="segchip" data-f="Residential" onclick="setMktF('Residential',this)">Residential</span>
     <span class="segchip" data-f="Commercial" onclick="setMktF('Commercial',this)">Commercial</span>
     <span class="segchip" data-f="Land" onclick="setMktF('Land',this)">Land</span>
+    <span class="segchip" data-f="Development" onclick="setMktF('Development',this)">Development</span>
   </div>
   <div id="propList"></div>
 </div>
@@ -876,6 +877,43 @@ const ASSET_CLASSES = {
       const ask=Math.round(spaces*rnd(6000,18000)/1000)*1000;
       const monthlyRent=Math.round(spaces*rnd(60,180)*rnd(.7,.92)/25)*25;
       return baseAsset('parking',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} Parking`, units:spaces, sqft, ask, arv:ask, monthlyRent, vacRate:.08}); } },
+  // ── P3: development (construction timeline reuses the rehab engine) ──
+  subdiv:{key:'subdiv',label:'Land Subdivision',icon:'📐',cat:'Development',surface:'market',container:'portfolio',physical:true,dev:true,
+    incomeModel:'none',expenseModel:'holding-cost',appreciation:'none',valuation:'comp',financing:['cash','priv'],states:['market','rehab','listed'],
+    generate:()=>{ const hk=pickHood(); const acres=+rnd(2,30).toFixed(1);
+      const ask=Math.round(acres*rnd(8000,30000)/1000)*1000;
+      const buildCost=Math.round(ask*rnd(.3,.6)/1000)*1000;
+      const lots=Math.max(3,Math.round(acres*rnd(1.5,3)));
+      const arv=Math.round((ask+buildCost)*rnd(1.5,2.2)/1000)*1000;
+      return baseAsset('subdiv',hk,{addr:`${ri(100,9900)} ${pick(STREETS).split(' ')[0]} Subdivision`, acres, sqft:Math.round(acres*43560), ask, buildCost, buildWeeks:ri(10,24), arv, lots, carry:Math.round(ask*.0015),
+        devFinish:{subdivide:true, label:`Subdivision (${lots} lots)`}}); } },
+  gusmall:{key:'gusmall',label:'Ground-Up (Small)',icon:'🏗️',cat:'Development',surface:'market',container:'portfolio',physical:true,dev:true,
+    incomeModel:'none',expenseModel:'holding-cost',appreciation:'none',valuation:'comp',financing:['cash','conv','priv'],states:['market','rehab','rented','listed'],
+    generate:()=>{ const hk=pickHood(); const units=pick([1,1,2,4]);
+      const ask=Math.round(rnd(30000,120000)/1000)*1000;
+      const buildCost=Math.round(units*rnd(110000,180000)/1000)*1000;
+      const arv=Math.round((ask+buildCost)*rnd(1.12,1.35)/1000)*1000;
+      const rent=Math.round(units*rnd(1400,2400)/25)*25;
+      return baseAsset('gusmall',hk,{addr:`${ri(100,9900)} ${pick(STREETS)}`, units, sqft:units*ri(900,1400), ask, buildCost, buildWeeks:ri(16,40), arv, beds:3, baths:2, yr:G.year,
+        devFinish:{ac:'resi', rent, units, label:'Construction'}}); } },
+  gularge:{key:'gularge',label:'Ground-Up (Large)',icon:'🏢',cat:'Development',surface:'market',container:'portfolio',physical:true,dev:true,
+    incomeModel:'none',expenseModel:'holding-cost',appreciation:'none',valuation:'comp',financing:['cash','conv','dscr','priv'],states:['market','rehab','rented','listed'],
+    generate:()=>{ const hk=pick(['A','B','B','C']); const units=ri(12,80);
+      const ask=Math.round(rnd(300000,1500000)/10000)*10000;
+      const buildCost=Math.round(units*rnd(90000,150000)/1000)*1000;
+      const arv=Math.round((ask+buildCost)*rnd(1.1,1.3)/10000)*10000;
+      const rent=Math.round(units*rnd(1100,1900)/25)*25;
+      return baseAsset('gularge',hk,{addr:`${pick(['The','Park','Vista','Summit'])} ${pick(['Residences','Apartments','Lofts','Tower'])}`, units, sqft:units*ri(750,1050), ask, buildCost, buildWeeks:ri(36,90), arv, beds:2, baths:2, yr:G.year,
+        devFinish:{ac:'resi', rent, units, label:'Apartment build'}}); } },
+  adaptive:{key:'adaptive',label:'Adaptive Reuse',icon:'🏚️',cat:'Development',surface:'market',container:'portfolio',physical:true,dev:true,
+    incomeModel:'none',expenseModel:'holding-cost',appreciation:'none',valuation:'comp',financing:['cash','conv','hml','priv'],states:['market','rehab','rented','listed'],
+    generate:()=>{ const hk=pick(['B','C','C','D']); const units=ri(6,30);
+      const ask=Math.round(rnd(150000,700000)/10000)*10000;
+      const buildCost=Math.round(units*rnd(60000,110000)/1000)*1000;
+      const arv=Math.round((ask+buildCost)*rnd(1.15,1.4)/10000)*10000;
+      const rent=Math.round(units*rnd(1000,1700)/25)*25;
+      return baseAsset('adaptive',hk,{addr:`Old ${pick(['Mill','Warehouse','Schoolhouse','Factory','Hotel'])} on ${pick(STREETS).split(' ')[0]}`, units, sqft:units*ri(700,1100), ask, buildCost, buildWeeks:ri(20,52), arv, beds:1, baths:1, yr:ri(1900,1970),
+        devFinish:{ac:'resi', rent, units, label:'Conversion'}}); } },
   // ── P2: financial holdings (private lending + tax liens) ──
   lending:{key:'lending',label:'Private Loan',icon:'🏦',cat:'Lending',surface:'finance',container:'holdings',physical:false,
     incomeModel:'interest',expenseModel:'none',appreciation:'none',valuation:'face',financing:['none'],risk:.05},
@@ -1113,10 +1151,23 @@ function tick(){
     if(p.status==='rehab'&&p.rehabWeeksLeft>0){
       p.rehabWeeksLeft=Math.max(0,p.rehabWeeksLeft-(rehabSpeed>1?rehabSpeed-1:0)-1);
       if(p.rehabWeeksLeft<=0){
-        p.status='vacant';p.cond=5;p.marketVal=p.arv;
-        G.lifetimeRehab=(G.lifetimeRehab||0)+1;
-        evFeed(`Rehab complete: ${p.addr} — ARV ${fmt$(p.arv,1)}. Ready to rent or sell.`,'good');
-        advise('BRRRR Opportunity',`${p.addr} rehab done at ARV ${fmt$(p.arv,1)}. Cash-out refi at 75% LTV returns ~${fmt$(Math.round(p.arv*.75/1000)*1000,1)} — recycle that into your next deal.`);
+        if(p.devFinish){
+          // Development project completes: transform into the finished asset
+          const f=p.devFinish;
+          p.ac=f.ac||'resi'; p.marketVal=p.arv; p.cond=5;
+          if(f.units) p.units=f.units;
+          if(f.rent){ p.monthlyRent=f.rent; p.status='rented'; p.tenant='Operating'; }
+          else { p.status='vacant'; }
+          if(f.subdivide){ p.status='listed'; p.listPrice=p.arv; } // subdivision: lots go to market for sale
+          G.lifetimeRehab=(G.lifetimeRehab||0)+1;
+          evFeed(`🏗️ ${f.label||'Construction'} complete: ${p.addr} — now worth ${fmt$(p.arv,1)}${f.rent?` · ${fmt$(f.rent,true)}/mo`:''}`,'good');
+          delete p.devFinish;
+        } else {
+          p.status='vacant';p.cond=5;p.marketVal=p.arv;
+          G.lifetimeRehab=(G.lifetimeRehab||0)+1;
+          evFeed(`Rehab complete: ${p.addr} — ARV ${fmt$(p.arv,1)}. Ready to rent or sell.`,'good');
+          advise('BRRRR Opportunity',`${p.addr} rehab done at ARV ${fmt$(p.arv,1)}. Cash-out refi at 75% LTV returns ~${fmt$(Math.round(p.arv*.75/1000)*1000,1)} — recycle that into your next deal.`);
+        }
       }
     }
     // Value-add (CapEx) progress — runs in parallel; property keeps its status
@@ -3003,7 +3054,17 @@ function assetDealRow(p){
   const cap=p.ask>0?(noiV*12)/p.ask:0;
   const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
   const income=cfg.incomeModel==='none';
-  return`<div class="row" onclick="openAssetBuy(${p.id})">
+  const buyFn=cfg.dev?`openDevBuy(${p.id})`:`openAssetBuy(${p.id})`;
+  const stats=cfg.dev
+    ? `<div class="pstat"><div class="psl">Acquire</div><div class="psv warn">${fmt$(p.ask,true)}</div></div>
+       <div class="pstat"><div class="psl">Build</div><div class="psv warn">${fmt$(p.buildCost,true)}</div><div class="psd">${p.buildWeeks}wk</div></div>
+       <div class="pstat"><div class="psl">Finished</div><div class="psv pos">${fmt$(p.arv,true)}</div></div>
+       <div class="pstat"><div class="psl">Profit</div><div class="psv ${p.arv-p.ask-p.buildCost>0?'pos':'neg'}">${fmt$(p.arv-p.ask-(p.buildCost||0),true)}</div></div>`
+    : `<div class="pstat"><div class="psl">Price</div><div class="psv warn">${fmt$(p.ask,true)}</div></div>
+       <div class="pstat"><div class="psl">${income?'Est. Value':'Income'}</div><div class="psv pos">${income?fmt$(p.arv,true):fmt$(p.monthlyRent,true)+'/mo'}</div></div>
+       <div class="pstat"><div class="psl">${income?'Upside':'Cap Rate'}</div><div class="psv ${income?'pos':''}">${income?fmt$(Math.max(0,p.arv-p.ask),true):fmtPct(cap)}</div></div>
+       <div class="pstat"><div class="psl">Class</div><div class="psv" style="font-size:10px">${cfg.cat||'Asset'}</div></div>`;
+  return`<div class="row" onclick="${buyFn}">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
         <div class="rname">${cfg.icon} ${p.addr}</div>
@@ -3011,40 +3072,40 @@ function assetDealRow(p){
         <span class="rtag tag-info">${cfg.label}</span>
       </div>
       <div class="rdetail">${sub} · <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span></div>
-      <div class="pstat-box">
-        <div class="pstat"><div class="psl">Price</div><div class="psv warn">${fmt$(p.ask,true)}</div></div>
-        <div class="pstat"><div class="psl">${income?'Est. Value':'Income'}</div><div class="psv pos">${income?fmt$(p.arv,true):fmt$(p.monthlyRent,true)+'/mo'}</div></div>
-        <div class="pstat"><div class="psl">${income?'Upside':'Cap Rate'}</div><div class="psv ${income?'pos':''}">${income?fmt$(Math.max(0,p.arv-p.ask),true):fmtPct(cap)}</div></div>
-        <div class="pstat"><div class="psl">Class</div><div class="psv" style="font-size:10px">${cfg.cat||'Asset'}</div></div>
-      </div>
+      <div class="pstat-box">${stats}</div>
     </div>
     <div class="rright">
       <div class="rprice warn">${fmt$(p.ask,true)}</div>
       <span class="rtag ${staleCls}">${staleLabel}</span>
-      <button class="mbtn sm pri" onclick="event.stopPropagation();openAssetBuy(${p.id})" style="margin-top:4px">Buy</button>
+      <button class="mbtn sm pri" onclick="event.stopPropagation();${buyFn}" style="margin-top:4px">${cfg.dev?'Build':'Buy'}</button>
     </div>
   </div>`;
 }
 // Class-aware owned card for non-residential assets.
 function assetOwnCard(p){
   const cfg=acCfg(p), l=activeLoan(p), eq=equity(p);
-  const cf=(p.status==='rented')?(assetNOI(p)-propPayment(p))*myShare(p):(cfg.expenseModel==='holding-cost'?assetNOI(p)*myShare(p):0);
-  const scMap={held:'info',rented:'pos',listed:'info',vacant:'neg'};
+  const building=p.status==='rehab';
+  const cf=(p.status==='rented')?(assetNOI(p)-propPayment(p))*myShare(p):(cfg.expenseModel==='holding-cost'&&!building?assetNOI(p)*myShare(p):0);
+  const scMap={held:'info',rented:'pos',listed:'info',vacant:'neg',rehab:'warn'};
   const sub=p.acres?`${p.acres} acres`:p.units?`${p.units} ${p.ac==='parking'?'spaces':p.ac==='mobile'?'lots':'units'}`:`${(p.sqft||0).toLocaleString()} sqft`;
+  const prog=p.rehabWksTotal>0?Math.round((1-p.rehabWeeksLeft/p.rehabWksTotal)*100):0;
   return`<div class="own-card">
     <div class="own-head">
       <div><div class="own-addr">${cfg.icon} ${p.addr}</div><div class="own-sub">${cfg.label} · ${sub} · ${HOODS[p.hood]?HOODS[p.hood].name:'—'}</div></div>
-      <span class="badge ${scMap[p.status]||''}">${(p.status||'').toUpperCase()}</span>
+      <span class="badge ${scMap[p.status]||''}">${building?'BUILDING':(p.status||'').toUpperCase()}</span>
     </div>
+    ${building?`<div class="prog-wrap"><div class="prog-lbl">🏗️ Construction — ${p.rehabWeeksLeft}wk left → ${fmt$(p.arv,1)}</div><div class="prog-bar"><div class="prog-fill" style="width:${prog}%"></div></div></div>`:''}
     <div class="own-stats">
       <div class="ocell"><div class="ol">Mkt Value</div><div class="ocv">${fmt$(p.marketVal,true)}</div><div class="od">Cost ${fmt$(p.purchasePrice,true)}</div></div>
       <div class="ocell"><div class="ol">Equity</div><div class="ocv pos">${fmt$(eq,true)}</div><div class="od">${l?'Debt '+fmt$(propDebt(p),true):'No loan'}</div></div>
-      <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${fmtCF(Math.round(cf))}</div><div class="od">${cfg.incomeModel==='none'?'Land hold':fmt$(p.monthlyRent,true)+' income'}</div></div>
+      <div class="ocell"><div class="ol">Monthly CF</div><div class="ocv ${cf>=0?'pos':'neg'}">${building?'—':fmtCF(Math.round(cf))}</div><div class="od">${building?'Under construction':cfg.incomeModel==='none'?'Land hold':fmt$(p.monthlyRent,true)+' income'}</div></div>
     </div>
     <div class="own-acts">
-      ${p.status==='listed'
-        ? `<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks||0}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`
-        : `<button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button>${l?'':''}`}
+      ${building
+        ? `<span style="font-size:10.5px;color:var(--warn)">🏗️ Construction in progress…</span>`
+        : p.status==='listed'
+          ? `<span style="font-size:10.5px;color:var(--txt-dim)">Listed ${fmt$(p.listPrice,true)} · ${p.listWeeks||0}wk</span><button class="mbtn sm danger" onclick="delistProp(${p.id})">Delist</button>`
+          : `<button class="mbtn sm" onclick="openListModal(${p.id})">List for Sale</button>`}
       <button class="mbtn sm" onclick="openPropAnalytics(${p.id})" style="margin-left:auto">P&L ↗</button>
     </div>
   </div>`;
@@ -3058,6 +3119,7 @@ function renderMarket(){
       if(G.mktFilter==='Residential') return (p.ac||'resi')==='resi';
       if(G.mktFilter==='Commercial') return cfg.cat==='Commercial';
       if(G.mktFilter==='Land') return cfg.cat==='Land';
+      if(G.mktFilter==='Development') return cfg.cat==='Development';
       return p.ptype===G.mktFilter; // legacy SFR/Duplex/4-Plex
     });
   }
@@ -3257,6 +3319,77 @@ function openPropModal(id){
       <div class="dbtns"><button class="mbtn green" onclick="closeModal();openBuyModal(${p.id})">Make an Offer →</button><button class="mbtn" onclick="closeModal()">Pass</button></div>
     </div>`;
   document.getElementById('modalOv').classList.remove('hide');
+}
+
+// ── Development buy flow (acquisition + construction over a timeline) ──
+function openDevBuy(id){
+  const p=G.market.find(x=>x.id===id);
+  if(!p){toast('Deal no longer available','bad');return;}
+  const cfg=acCfg(p);
+  let selLoan=cfg.financing[0]||'cash';
+  const render=()=>{
+    const lo=LOANS[selLoan]||LOANS.cash;
+    const down=Math.round(p.ask*lo.down), principal=p.ask-down;
+    const closing=Math.round(p.ask*.02), pts=Math.round(principal*lo.points);
+    const totalCash=down+closing+pts+(p.buildCost||0);
+    const profit=p.arv-p.ask-(p.buildCost||0)-closing;
+    const canAfford=G.cash>=totalCash;
+    const f=p.devFinish||{};
+    document.getElementById('devBuyBody').innerHTML=`
+      <div class="sec" style="padding:6px 0 5px"><h2>Financing (on land)</h2><div class="rule"></div></div>
+      <div class="lender-list">${cfg.financing.map(k=>{const l=LOANS[k];return`<div class="lender-row${selLoan===k?' sel':''}" onclick="selDevLoan('${k}')"><div class="lender-main"><div class="lender-name">${l.name}</div><div class="lender-sub">${l.down*100}% down${l.term?' · '+l.term+'mo':''}</div></div><div class="lender-right"><div class="lender-rate">${l.rate>0?fmtPct(l.rate):'0%'}</div></div></div>`;}).join('')}</div>
+      <div class="card" style="margin:10px 0 0">
+        <div class="frow"><span class="fl">Acquisition</span><span class="fv warn">${fmt$(p.ask)}</span></div>
+        <div class="frow"><span class="fl">Construction Budget</span><span class="fv warn">${fmt$(p.buildCost)}</span></div>
+        <div class="frow"><span class="fl">Build Timeline</span><span class="fv">${p.buildWeeks} weeks</span></div>
+        <div class="frow"><span class="fl">Down + Closing + Points</span><span class="fv">${fmt$(down+closing+pts)}</span></div>
+        <div class="frow tot"><span class="fl">Cash Needed Now</span><span class="fv ${canAfford?'pos':'neg'}">${fmt$(totalCash)}</span></div>
+        <div class="frow"><span class="fl">Finished Value (ARV)</span><span class="fv pos">${fmt$(p.arv)}</span></div>
+        ${f.rent?`<div class="frow"><span class="fl">Projected Income</span><span class="fv pos">${fmt$(f.rent)}/mo</span></div>`:''}
+        <div class="frow tot"><span class="fl">Projected Profit</span><span class="fv ${profit>=0?'pos':'neg'}">${fmtCF(profit)}</span></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:7px">
+        <button class="mbtn green" ${canAfford?'':'disabled'} onclick="executeDevBuy(${p.id},'${selLoan}')">Start Project →</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+      ${!canAfford?`<div class="subnote" style="padding:6px 0;color:var(--neg)">⚠ Need ${fmt$(totalCash-G.cash)} more cash.</div>`:''}`;
+  };
+  window.selDevLoan=(k)=>{selLoan=k;render();};
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>${cfg.icon} ${p.addr}</h3>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+      <span class="badge info">${cfg.label}</span>
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span>
+      ${p.units?`<span class="badge">${p.units} units</span>`:p.acres?`<span class="badge">${p.acres} acres</span>`:''}
+    </div>
+    <div class="dec" style="margin-bottom:6px"><div class="db">Acquire the site now and fund the construction budget. Construction takes ${p.buildWeeks} weeks (Contractors speed it up). When complete it becomes a finished, ${p.devFinish&&p.devFinish.rent?'income-producing':'saleable'} asset worth ${fmt$(p.arv,1)}.</div></div>
+    <div id="devBuyBody"></div>`;
+  render();
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function executeDevBuy(id, loanType){
+  const p=G.market.find(x=>x.id===id);
+  if(!p){toast('Deal no longer available','bad');return;}
+  const cfg=acCfg(p), price=p.ask, lo=LOANS[loanType]||LOANS.cash;
+  const down=Math.round(price*lo.down), principal=price-down;
+  const closing=Math.round(price*.02), pts=Math.round(principal*lo.points);
+  const buildCost=p.buildCost||0;
+  const totalCash=down+closing+pts+buildCost;
+  if(G.cash<totalCash){toast('Not enough cash!','bad');return;}
+  G.cash-=totalCash; p.cashInvested=totalCash; p.purchasePrice=price; p.marketVal=price;
+  ledger(`Dev acquisition: ${p.addr}`,-totalCash);
+  if(loanType!=='cash'&&lo.term){
+    const pmt=lo.intOnly?ioPmt(principal,lo.rate):mpmt(principal,lo.rate,lo.term);
+    G.loans.push({id:++G.lidSeq,propId:p.id,type:loanType,name:`${lo.name} — ${p.addr.split(' ').slice(0,2).join(' ')}`,rate:lo.rate,termMonths:lo.term,balance:principal,payment:pmt,points:pts,intOnly:lo.intOnly,monthsPaid:0,status:'active'});
+  }
+  p.status='rehab'; p.rehabWeeksLeft=p.buildWeeks; p.rehabWksTotal=p.buildWeeks; p.rehabCost=buildCost;
+  G.market=G.market.filter(x=>x.id!==id); G.portfolio.push(p);
+  if(G.yearStats) G.yearStats.acquired=(G.yearStats.acquired||0)+1;
+  G.lifetimeAcquired=(G.lifetimeAcquired||0)+1;
+  evFeed(`🏗️ Started ${cfg.label}: ${p.addr} — ${p.buildWeeks}wk build, finished value ${fmt$(p.arv,1)}`,'good');
+  checkAchievements(); closeModal(); toast('Project started!','good');
+  go('port',document.querySelector('.nav .tab[data-tab="port"]'));
 }
 
 // ── Simple buy flow for non-residential physical assets (land/storage/etc.) ──

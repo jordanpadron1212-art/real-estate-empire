@@ -914,6 +914,27 @@ const ASSET_CLASSES = {
       const rent=Math.round(units*rnd(1000,1700)/25)*25;
       return baseAsset('adaptive',hk,{addr:`Old ${pick(['Mill','Warehouse','Schoolhouse','Factory','Hotel'])} on ${pick(STREETS).split(' ')[0]}`, units, sqft:units*ri(700,1100), ask, buildCost, buildWeeks:ri(20,52), arv, beds:1, baths:1, yr:ri(1900,1970),
         devFinish:{ac:'resi', rent, units, label:'Conversion'}}); } },
+  // ── P4: commercial (NNN tenant pays expenses; cap-rate valuation) ──
+  nnn:{key:'nnn',label:'NNN Retail',icon:'🏬',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'nnn',expenseModel:'nnn-passthrough',appreciation:'none',valuation:'caprate',financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.03,
+    generate:()=>genCommercial('nnn','Single-Tenant',['Pharmacy','Drive-Thru','Auto Parts','Dollar Store','Bank Branch'],[ .055,.075],rnd(900000,4000000))},
+  office:{key:'office',label:'Office Building',icon:'🏢',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'nnn',expenseModel:'nnn-passthrough',appreciation:'none',valuation:'caprate',financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.08,
+    generate:()=>genCommercial('office','Office Park',['Office Plaza','Corporate Ctr','Medical Office','Tech Campus'],[.065,.09],rnd(1500000,9000000))},
+  industrial:{key:'industrial',label:'Warehouse',icon:'🏭',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'nnn',expenseModel:'nnn-passthrough',appreciation:'none',valuation:'caprate',financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.04,
+    generate:()=>genCommercial('industrial','Distribution',['Logistics Ctr','Warehouse','Flex Industrial','Cold Storage'],[.055,.08],rnd(1200000,8000000))},
+  mixed:{key:'mixed',label:'Mixed-Use',icon:'🏙️',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'nnn',expenseModel:'nnn-passthrough',appreciation:'none',valuation:'caprate',financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.06,
+    generate:()=>genCommercial('mixed','Retail+Resi',['Main St Mixed','Town Center','Live-Work','Corner Block'],[.06,.085],rnd(800000,5000000))},
+  hotel:{key:'hotel',label:'Hospitality',icon:'🏨',cat:'Commercial',surface:'market',container:'portfolio',physical:true,
+    incomeModel:'rent',expenseModel:'nnn-passthrough',appreciation:'none',valuation:'caprate',financing:['cash','dscr','conv'],states:['market','rented','listed'],initialState:'rented',risk:.14,seasonal:true,
+    generate:()=>genCommercial('hotel','Hotel/Vacation',['Boutique Hotel','Beach Resort','Highway Inn','Vacation Rentals'],[.075,.11],rnd(1500000,10000000))},
+  // ── P4: passive vehicles (LP positions; financial holdings) ──
+  syndication:{key:'syndication',label:'Syndication (LP)',icon:'🤝',cat:'Passive',surface:'finance',container:'holdings',physical:false,
+    incomeModel:'distribution',expenseModel:'none',appreciation:'none',valuation:'nav',financing:['none'],risk:.10},
+  crowdfunding:{key:'crowdfunding',label:'Crowdfunding',icon:'💻',cat:'Passive',surface:'finance',container:'holdings',physical:false,
+    incomeModel:'distribution',expenseModel:'none',appreciation:'none',valuation:'nav',financing:['none'],risk:.07},
   // ── P2: financial holdings (private lending + tax liens) ──
   lending:{key:'lending',label:'Private Loan',icon:'🏦',cat:'Lending',surface:'finance',container:'holdings',physical:false,
     incomeModel:'interest',expenseModel:'none',appreciation:'none',valuation:'face',financing:['none'],risk:.05},
@@ -937,7 +958,7 @@ function assetNOI(p){
     case 'holding-cost': return -(p.marketVal*.011/12*(G.taxMod||1)*(p.taxAppeal||1) + (p.carry||0));
     case 'nnn-passthrough':{
       const r=p.monthlyRent||0, v=r*(p.vacRate||.03);
-      return r - v - (r*(p.mgmtPct||0)) - (p.marketVal*.0015/12); // tenant covers tax/ins/maint; small reserve
+      return r - v - (r*(p.mgmtPct||0)) - r*.05; // tenant covers tax/ins/maint; ~5% structural reserve/mgmt
     }
   }
 }
@@ -1107,6 +1128,17 @@ function baseAsset(ac,hk,extra){
     mgmtPct:0, hoa:0, listPrice:0, listWeeks:0, tenant:null, ask:0, arv:0
   }, extra);
 }
+// Commercial generator: cap-rate-priced income property.
+function genCommercial(ac,kind,names,capBand,price){
+  const hk=pick(['A','A','B','B','C']);
+  const ask=Math.round(price/10000)*10000;
+  const capRate=rnd(capBand[0],capBand[1]);
+  const annualNOI=ask*capRate;
+  const monthlyRent=Math.round(annualNOI/12/(.95-.05)/25)*25; // back out gross so NOI≈ask*cap (nnn nets ~90%)
+  const sqft=Math.round(ask/rnd(120,320));
+  return baseAsset(ac,hk,{addr:`${pick(names)} · ${ri(100,9900)} ${pick(STREETS).split(' ')[0]}`, sqft, ask, arv:ask,
+    monthlyRent, vacRate:.05, capRate:capRate});
+}
 // Generic asset generator — dispatches to a class builder; resi uses genProp.
 function genAsset(ac,seed){
   const cfg=ASSET_CLASSES[ac]||ASSET_CLASSES.resi;
@@ -1180,6 +1212,10 @@ function tick(){
     if(p.status!=='market'&&p.marketVal>0&&acCfg(p).valuation==='comp'){
       const weeklyAppr=apprRate(p)/52;
       p.marketVal=Math.round(p.marketVal*(1+weeklyAppr+(Math.random()-.5)*.0006));
+    } else if(p.status!=='market'&&acCfg(p).valuation==='caprate'&&p.capRate>0){
+      // Commercial value = NOI / cap rate; tiny weekly cap-rate drift
+      p.capRate=Math.max(.04,Math.min(.12,p.capRate+(Math.random()-.5)*.00008));
+      p.marketVal=Math.round(Math.max(0,assetNOI(p)*12)/p.capRate);
     }
   });
 
@@ -1512,6 +1548,19 @@ function monthlyTick(){
           G.portfolio.push(prop);
           evFeed(`🏆 Tax-deed acquired: ${h.addr} — you got the property (worth ${fmt$(prop.marketVal,true)}) for the ${fmt$(h.balance,true)} lien!`,'good');
         }
+      }
+    } else if(h.ac==='syndication'||h.ac==='crowdfunding'){
+      // monthly distribution, then capital event at the end of the term
+      if(h.payment){ G.cash+=h.payment; ledger(`Distribution: ${h.name}`,h.payment); }
+      h.monthsPaid=(h.monthsPaid||0)+1;
+      if(h.monthsPaid>=h.termMonths){
+        let exitMult=h.exitMult||1;
+        if(Math.random()<(h.dealRisk||.1)) exitMult=Math.max(.4,exitMult-rnd(.3,.7)); // deal underperforms
+        const exitValue=Math.round(h.committed*exitMult);
+        G.cash+=exitValue; ledger(`Capital returned: ${h.name}`,exitValue);
+        h.status='exited';
+        const gain=exitValue-h.committed;
+        evFeed(`${h.ac==='syndication'?'Syndication':'Crowdfunding'} exited: ${h.name} — capital returned ${gain>=0?'+':''}${fmt$(gain,true)} ${gain>=0?'gain':'loss'}`,gain>=0?'good':'warn');
       }
     }
   });
@@ -2472,8 +2521,14 @@ function renderHoldings(){
       return`<div class="loan-card conv"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.addr}</div><div class="loan-prop">${h.borrowerName} · ${h.termMonths-(h.monthsPaid||0)}mo left</div></div><span class="badge pos">LOAN</span></div>
         <div class="loan-nums"><div class="lcell"><div class="ll">Balance</div><div class="lv">${fmt$(h.balance,true)}</div></div><div class="lcell"><div class="ll">Income</div><div class="lv pos">${fmt$(h.payment,true)}/mo</div></div><div class="lcell"><div class="ll">Rate</div><div class="lv">${fmtPct(h.rate)}</div></div><div class="lcell"><div class="ll">Paid</div><div class="lv">${pct}%</div></div></div></div>`;
     }
-    return`<div class="loan-card priv"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.addr}</div><div class="loan-prop">Tax lien · matures ${h.monthsLeft}mo</div></div><span class="badge warn">LIEN</span></div>
+    if(h.ac==='lien'){
+      return`<div class="loan-card priv"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.addr}</div><div class="loan-prop">Tax lien · matures ${h.monthsLeft}mo</div></div><span class="badge warn">LIEN</span></div>
       <div class="loan-nums"><div class="lcell"><div class="ll">Lien Face</div><div class="lv">${fmt$(h.balance,true)}</div></div><div class="lcell"><div class="ll">Accrued</div><div class="lv pos">${fmt$(h.accrued||0,true)}</div></div><div class="lcell"><div class="ll">Rate</div><div class="lv">${fmtPct(h.rate)}</div></div><div class="lcell"><div class="ll">Matures</div><div class="lv">${h.monthsLeft}mo</div></div></div></div>`;
+    }
+    // syndication / crowdfunding
+    const pct=Math.min(100,Math.round((h.monthsPaid||0)/h.termMonths*100));
+    return`<div class="loan-card dscr"><div class="loan-head"><div><div class="loan-name">${cfg.icon} ${h.name||h.addr}</div><div class="loan-prop">${cfg.label} · ${h.termMonths-(h.monthsPaid||0)}mo lockup left</div></div><span class="badge info">${h.ac==='syndication'?'LP':'CF'}</span></div>
+      <div class="loan-nums"><div class="lcell"><div class="ll">Committed</div><div class="lv">${fmt$(h.committed,true)}</div></div><div class="lcell"><div class="ll">Distribution</div><div class="lv pos">${fmt$(h.payment,true)}/mo</div></div><div class="lcell"><div class="ll">Pref</div><div class="lv">${fmtPct(h.rate)}</div></div><div class="lcell"><div class="ll">Term</div><div class="lv">${pct}%</div></div></div></div>`;
   }).join('');
 }
 function openInvestMenu(){
@@ -2482,6 +2537,8 @@ function openInvestMenu(){
     <div style="display:flex;flex-direction:column;gap:8px">
       <button class="mbtn green wide" onclick="openOriginateModal()">🏦 Originate a Private Loan →</button>
       <button class="mbtn warn wide" onclick="openLienBrowse()">⚖️ Browse Tax Liens →</button>
+      <button class="mbtn wide" onclick="openOfferings('syndication')">🤝 Real-Estate Syndications →</button>
+      <button class="mbtn wide" onclick="openOfferings('crowdfunding')">💻 Crowdfunding Deals →</button>
       <button class="mbtn" onclick="closeModal()">Cancel</button>
     </div>`;
   document.getElementById('modalOv').classList.remove('hide');
@@ -2543,6 +2600,37 @@ function buyLien(i){
     monthsLeft:o.termMonths, termMonths:o.termMonths, collateralValue:o.collateralValue, payment:0, status:'active'});
   evFeed(`Bought tax lien on ${o.addr} for ${fmt$(o.face,true)} at ${fmtPct(o.rate)}`,'good');
   closeModal(); toast('Lien purchased!','good'); renderAll();
+}
+// ── Passive offerings: syndications + crowdfunding (LP positions) ──
+function openOfferings(kind){
+  const synd=kind==='syndication';
+  const offers=[]; const sponsors=['Atlas','Beacon','Cedar','Delta','Evergreen','Fortis','Granite','Harbor'];
+  const assets=['Apartments','Industrial Fund','Retail Portfolio','Self-Storage Fund','Build-to-Rent','Office Value-Add'];
+  for(let i=0;i<4;i++){
+    const min=synd?Math.round(rnd(25000,150000)/5000)*5000:Math.round(rnd(1000,15000)/500)*500;
+    const pref=rnd(.06,.09); const term=synd?ri(36,84):ri(12,36);
+    const exitMult=rnd(1.25,1.9);
+    offers.push({name:`${pick(sponsors)} ${pick(assets)}`, min, pref, term, exitMult, dealRisk:synd?.12:.08});
+  }
+  window.__offers={kind,offers};
+  const icon=synd?'🤝':'💻';
+  document.getElementById('modalBox').innerHTML=`<div class="x" onclick="closeModal()">×</div><h3>${icon} ${synd?'Syndications (LP)':'Crowdfunding Deals'}</h3>
+    <div class="dec" style="margin:6px 0 10px"><div class="db">${synd?'Invest as a limited partner in a sponsor’s deal. Earn a monthly preferred-return distribution, then your capital is returned with a profit share at exit — but it’s locked up for the term.':'Small fixed-term stakes in individual projects. Periodic distributions, principal returned at the end of the term.'}</div></div>
+    ${offers.map((o,i)=>`<div class="lender-row" style="cursor:default"><div class="lender-main"><div class="lender-name">${o.name}</div><div class="lender-sub">${fmtPct(o.pref)} pref · ${o.term}mo lockup · ~${o.exitMult.toFixed(2)}× projected</div></div><div class="lender-right"><div class="lender-rate">${fmt$(o.min,true)} min</div><button class="mbtn sm green" onclick="investOffering(${i})" style="margin-top:3px">Invest</button></div></div>`).join('')}
+    <button class="mbtn" onclick="closeModal()" style="margin-top:10px">Close</button>`;
+  document.getElementById('modalOv').classList.remove('hide');
+}
+function investOffering(i){
+  const data=window.__offers; if(!data) return;
+  const o=data.offers[i]; if(!o){toast('Offering gone','bad');return;}
+  if(G.cash<o.min){toast(`Need ${fmt$(o.min,true)} minimum`,'bad');return;}
+  const committed=o.min;
+  const payment=Math.round(committed*o.pref/12);
+  G.cash-=committed; ledger(`${data.kind==='syndication'?'Syndication':'Crowdfunding'} investment: ${o.name}`,-committed);
+  G.holdings.push({id:++G.hidSeq, ac:data.kind, name:o.name, addr:o.name, committed, nav:committed,
+    payment, rate:o.pref, termMonths:o.term, monthsPaid:0, exitMult:o.exitMult, dealRisk:o.dealRisk, status:'active'});
+  evFeed(`Invested ${fmt$(committed,true)} in ${o.name} — ${fmt$(payment,true)}/mo pref, ${o.term}mo lockup`,'good');
+  closeModal(); toast('Investment committed!','good'); renderAll();
 }
 
 function renderCareerStats(){

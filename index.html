@@ -1333,7 +1333,7 @@ function processAutomation(){
       case 'auto_value_add':{
         const floor=Number(r.params.floor)||40000;
         const roiMin=Number(r.params.roi)||1.3;
-        G.portfolio.filter(p=>(p.status==='rented'||(p.status==='vacant'&&p.cond===5))&&!p.vaWeeksLeft).forEach(p=>{
+        G.portfolio.filter(p=>(p.ac||'resi')==='resi'&&(p.status==='rented'||(p.status==='vacant'&&p.cond===5))&&!p.vaWeeksLeft).forEach(p=>{
           // pick the most cost-effective project that clears ROI and the cash floor
           let best=null;
           Object.keys(VALUE_ADD).forEach(k=>{
@@ -2152,7 +2152,7 @@ function handleLeaseExpiry(p){
 // ── AUCTIONS ───────────────────────────────────────
 function generateAuction(){
   if((G.auctions||[]).filter(a=>a.status==='open').length>=2) return;
-  const avail=G.market.filter(p=>!p.isAuction&&!p.isWholesale&&p.wom>=3);
+  const avail=G.market.filter(p=>!p.isAuction&&!p.isWholesale&&p.wom>=3&&(p.ac||'resi')==='resi');
   if(!avail.length) return;
   const p=avail[Math.floor(Math.random()*avail.length)];
   p.isAuction=true;
@@ -4018,9 +4018,10 @@ function openPropAnalytics(id){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
   // keep this P&L live as weeks advance
   liveModal=()=>{ if(G.portfolio.some(x=>x.id===id)) openPropAnalytics(id); else { liveModal=null; closeModal(); } };
+  const cfg=acCfg(p), isResi=(p.ac||'resi')==='resi';
   const l=activeLoan(p);
   const gross=p.monthlyRent||0;
-  const vacPct=p.vacRate||HOODS[p.hood].vacBase;
+  const vacPct=p.vacRate||(HOODS[p.hood]?HOODS[p.hood].vacBase:.05);
   const vacancy=gross*vacPct;
   const egi=gross-vacancy;
   const mgmt=gross*(p.mgmtPct||0);
@@ -4028,7 +4029,9 @@ function openPropAnalytics(id){
   const ins=(p.sqft||1000)*.042;
   const maint=(p.sqft||1000)*.083;
   const hoa=p.hoa||0;
-  const noiVal=egi-mgmt-tax-ins-maint-hoa;
+  const building=p.status==='rehab';
+  // class-aware NOI: residential uses the full statement; others use assetNOI
+  const noiVal=building?0:(isResi?(egi-mgmt-tax-ins-maint-hoa):assetNOI(p));
   const debtSvc=propPayment(p);
   const ncf=noiVal-debtSvc;
   const coc=p.cashInvested>0?(ncf*12)/p.cashInvested:0;
@@ -4036,31 +4039,50 @@ function openPropAnalytics(id){
   const eq=equity(p);
   const ltv=l&&p.marketVal?propDebt(p)/p.marketVal:0;
   const unrealizedGain=p.marketVal-p.purchasePrice-(p.rehabCost||0);
-  const totalReturn=p.cashInvested>0?((ncf*12)+(p.marketVal*HOODS[p.hood].appreci))/p.cashInvested:0;
-
-  document.getElementById('modalBox').innerHTML=`
-    <div class="x" onclick="closeModal()">×</div>
-    <h3>P&L: ${p.addr}</h3>
-    <div style="margin-bottom:10px">
-      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood].name}</span>
-      <span class="badge">${p.ptype}</span>
-      <span class="badge ${ncf>=0?'pos':'neg'}">${p.status.toUpperCase()}</span>
-    </div>
-    <div class="sec" style="padding:0 0 5px"><h2>Monthly Income Statement</h2><div class="rule"></div></div>
-    <div class="card" style="margin:0 0 10px">
-      <div class="frow"><span class="fl">Gross Rent (${p.units} unit${p.units>1?'s':''})</span><span class="fv pos">+${fmt$(gross)}</span></div>
+  const totalReturn=p.cashInvested>0?((ncf*12)+(p.marketVal*apprRate(p)))/p.cashInvested:0;
+  const unitWord=p.ac==='parking'?'space':p.ac==='mobile'?'lot':p.acres?'':'unit';
+  const sizeLabel=p.acres?`${p.acres} acres`:p.units?`${p.units} ${unitWord}${p.units>1?'s':''}`:`${(p.sqft||0).toLocaleString()} sqft`;
+  // income statement rows differ by class
+  let stmt;
+  if(building){
+    stmt=`<div class="frow"><span class="fl">Status</span><span class="fv warn">Under construction — ${p.rehabWeeksLeft}wk to ${fmt$(p.arv,1)}</span></div>
+      <div class="frow"><span class="fl">Construction Budget</span><span class="fv">${fmt$(p.rehabCost||0)}</span></div>
+      <div class="frow tot"><span class="fl">Projected Income</span><span class="fv pos">${p.devFinish&&p.devFinish.rent?fmt$(p.devFinish.rent)+'/mo':'on sale'}</span></div>`;
+  } else if(cfg.incomeModel==='none'){
+    stmt=`<div class="frow"><span class="fl">Income</span><span class="fv">None (hold for appreciation)</span></div>
+      <div class="frow"><span class="fl">Holding Cost</span><span class="fv neg">${fmt$(Math.round(noiVal))}/mo</span></div>
+      <div class="frow tot"><span class="fl">Annual Carry</span><span class="fv neg">${fmt$(Math.round(noiVal*12))}/yr</span></div>`;
+  } else if(isResi){
+    stmt=`<div class="frow"><span class="fl">Gross Rent (${p.units||1} unit${(p.units||1)>1?'s':''})</span><span class="fv pos">+${fmt$(gross)}</span></div>
       <div class="frow"><span class="fl">Vacancy (${fmtPct(vacPct)})</span><span class="fv neg">−${fmt$(vacancy,true)}</span></div>
       <div class="frow tot"><span class="fl">Effective Gross Income</span><span class="fv">${fmt$(egi)}</span></div>
       ${mgmt?`<div class="frow"><span class="fl">Property Mgmt (${fmtPct(p.mgmtPct)})</span><span class="fv neg">−${fmt$(mgmt,true)}</span></div>`:''}
       <div class="frow"><span class="fl">Property Tax${p.taxAppeal&&p.taxAppeal<1?` <span class="lc-chip lc-ok">−${fmtPct(1-p.taxAppeal)} appealed</span>`:''}</span><span class="fv neg">−${fmt$(tax,true)}</span></div>
       <div class="frow"><span class="fl">Insurance</span><span class="fv neg">−${fmt$(ins,true)}</span></div>
       <div class="frow"><span class="fl">Maintenance</span><span class="fv neg">−${fmt$(maint,true)}</span></div>
-      ${hoa?`<div class="frow"><span class="fl">HOA</span><span class="fv neg">−${fmt$(hoa,true)}</span></div>`:''}
-      <div class="frow tot"><span class="fl">Net Operating Income</span><span class="fv ${noiVal>=0?'pos':'neg'}">${fmt$(noiVal)}/mo</span></div>
+      ${hoa?`<div class="frow"><span class="fl">HOA</span><span class="fv neg">−${fmt$(hoa,true)}</span></div>`:''}`;
+  } else {
+    // commercial / income asset (NNN etc.)
+    stmt=`<div class="frow"><span class="fl">Gross Income (${sizeLabel})</span><span class="fv pos">+${fmt$(gross)}</span></div>
+      <div class="frow"><span class="fl">Vacancy / Reserve</span><span class="fv neg">−${fmt$(Math.round(gross-noiVal-debtSvc>0?gross-noiVal:gross*0.1),true)}</span></div>
+      <div class="frow" style="font-size:10.5px;color:var(--txt-dim)"><span class="fl">${cfg.expenseModel==='nnn-passthrough'?'Tenant pays tax / insurance / maintenance (NNN)':'Operating expenses'}</span><span class="fv"></span></div>`;
+  }
+  document.getElementById('modalBox').innerHTML=`
+    <div class="x" onclick="closeModal()">×</div>
+    <h3>P&L: ${p.addr}</h3>
+    <div style="margin-bottom:10px">
+      <span class="badge ${p.hood==='A'?'pos':p.hood==='B'?'info':p.hood==='C'?'warn':'neg'}">${HOODS[p.hood]?HOODS[p.hood].name:'—'}</span>
+      <span class="badge">${isResi?(p.ptype||'SFR'):cfg.label}</span>
+      <span class="badge ${ncf>=0?'pos':'neg'}">${building?'BUILDING':(p.status||'').toUpperCase()}</span>
+    </div>
+    <div class="sec" style="padding:0 0 5px"><h2>Monthly Income Statement</h2><div class="rule"></div></div>
+    <div class="card" style="margin:0 0 10px">
+      ${stmt}
+      <div class="frow tot"><span class="fl">Net Operating Income</span><span class="fv ${noiVal>=0?'pos':'neg'}">${fmt$(Math.round(noiVal))}/mo</span></div>
       ${debtSvc?`<div class="frow"><span class="fl">Debt Service</span><span class="fv neg">−${fmt$(debtSvc,true)}/mo</span></div>`:''}
       <div class="frow tot" style="${ncf>=0?'background:rgba(70,217,138,.06)':'background:rgba(255,93,93,.06)'}">
         <span class="fl" style="font-weight:700">Net Cash Flow</span>
-        <span class="fv ${ncf>=0?'pos':'neg'}" style="font-size:16px">${fmtCF(ncf)}/mo</span>
+        <span class="fv ${ncf>=0?'pos':'neg'}" style="font-size:16px">${fmtCF(Math.round(ncf))}/mo</span>
       </div>
     </div>
     <div class="sec" style="padding:0 0 5px"><h2>Investment Metrics</h2><div class="rule"></div></div>
@@ -4108,6 +4130,7 @@ const VALUE_ADD={
 };
 function vaCostOf(p,key){return VALUE_ADD[key].cost(p);}
 function openValueAddModal(id){
+  {const _p=G.portfolio.find(x=>x.id===id); if(_p&&(_p.ac||'resi')!=='resi'){toast('Value-add applies to residential only','warn');return;}}
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
   if(p.status==='rehab'||p.vaWeeksLeft>0){toast('A project is already running here','warn');return;}
   document.getElementById('modalBox').innerHTML=`
@@ -4131,6 +4154,7 @@ function openValueAddModal(id){
 }
 function startValueAdd(id,key){
   const p=G.portfolio.find(x=>x.id===id);if(!p)return;
+  if((p.ac||'resi')!=='resi'){toast('Value-add applies to residential properties only','warn');return;}
   const d=VALUE_ADD[key];if(!d)return;
   const cost=vaCostOf(p,key);
   if(G.cash<cost){toast('Not enough cash','bad');return;}
